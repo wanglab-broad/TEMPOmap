@@ -430,7 +430,6 @@ for(k in c("siControl","siYTHDC1")){
   res_df <- sc_fitting(gene_list,psd_bulk_list,v_n/100000,v_c/100000)
   for(j in levels(starmap_raw_norm@meta.data$sample)){
       tmp_vec <- starmap_normalized@meta.data$sample == j & 
-        starmap_normalized@meta.data$Phase == i & 
         starmap_normalized@meta.data$KD_label_combined == k
       res_df[[paste0(j,"_nc")]] <- apply(res_df,1,
                                          FUN = function(x){
@@ -617,8 +616,204 @@ dev.off()
 
 ```
 
+```{r }
+#Cor cluster
+res_df <- left_join(res_list$siControl,gene_cl_res,by = "gene")
+res_df <- left_join(res_df,TEMPO_regression,by = "gene")
+res_df$cluster <- as.factor(res_df$cluster)
+colnames(res_df)[which(colnames(res_df) == "slope")] <- "gamma"
+plot_list <- list()
+for(i in c("alpha","beta","gamma","nc_slope")){
+  tmp_obj <- aov(res_df[["alpha"]]~res_df[["cluster"]]) %>% summary()
+  plot_list[[i]] <- ggplot(res_df,aes_string(x = "cluster", y = i, fill = "cluster"))+
+    geom_violin() + ylim(quantile(res_df[[i]], probs = c(0,0.99))) + 
+    geom_boxplot(width = 0.1, fill = "white") + 
+    labs(title = paste(i,"ANOVA Pr:",tmp_obj[[1]][["Pr(>F)"]][1]))
+}
+
+ggarrange(plotlist = plot_list,nrow = 2,ncol = 2)
+```
+
+## Gene Clustering 
+### Cl Func Def
+```{r}
+##Function Defination
+#Get Standard data
+get_para_df <- function(g,tmp_list = res_list){
+  g_G1 <- paste0(g,"_G1")
+  g_S <- paste0(g,"_S")
+  g_G2M <- paste0(g,"_G2M")
+  gene_list_overlap <- intersect(intersect(res_list[[g_G1]]$gene,res_list[[g_S]]$gene),res_list[[g_G2M]]$gene)
+  tmp_df <- data.frame(gene = gene_list_overlap,
+                       G1_alpha = 0, S_alpha = 0, G2M_alpha = 0,
+                       G1_beta = 0,S_beta = 0,G2M_beta = 0,
+                       G1_beta_rsq = 0, S_beta_rsq = 0, G2M_beta_rsq = 0,
+                       G1_nc = 0, S_nc = 0, G2M_nc = 0)
+  
+  tmp_df$G1_alpha <- apply(tmp_df,1,FUN = function(x){tmp_list[[g_G1]]$alpha[tmp_list[[g_G1]]$gene == x[["gene"]] ]})
+  tmp_df$G1_beta <-  apply(tmp_df,1,FUN = function(x){tmp_list[[g_G1]]$beta[tmp_list[[g_G1]]$gene == x[["gene"]] ]})
+  tmp_df$S_alpha <-  apply(tmp_df,1,FUN = function(x){tmp_list[[g_S]]$alpha[tmp_list[[g_S]]$gene == x[["gene"]] ]})
+  tmp_df$S_beta <-   apply(tmp_df,1,FUN = function(x){tmp_list[[g_S]]$beta[tmp_list[[g_S]]$gene == x[["gene"]] ]})
+  tmp_df$G2M_alpha <-apply(tmp_df,1,FUN = function(x){tmp_list[[g_G2M]]$alpha[tmp_list[[g_G2M]]$gene == x[["gene"]] ]})
+  tmp_df$G2M_beta <- apply(tmp_df,1,FUN = function(x){tmp_list[[g_G2M]]$beta[tmp_list[[g_G2M]]$gene == x[["gene"]] ]})
+  
+  tmp_df$G1_beta_rsq <- apply(tmp_df,1,FUN = function(x){tmp_list[[g_G1]]$beta_r_sq[tmp_list[[g_G1]]$gene == x[["gene"]] ]})
+  tmp_df$S_beta_rsq <- apply(tmp_df,1,FUN = function(x){tmp_list[[g_S]]$beta_r_sq[tmp_list[[g_S]]$gene == x[["gene"]] ]})
+  tmp_df$G2M_beta_rsq <- apply(tmp_df,1,FUN = function(x){tmp_list[[g_G2M]]$beta_r_sq[tmp_list[[g_G2M]]$gene == x[["gene"]] ]})
+  
+  tmp_df$G1_nc <- apply(tmp_df,1,FUN = function(x){tmp_list[[g_G1]]$nc_slope[tmp_list[[g_G1]]$gene == x[["gene"]] ]})
+  tmp_df$S_nc <- apply(tmp_df,1,FUN = function(x){tmp_list[[g_S]]$nc_slope[tmp_list[[g_S]]$gene == x[["gene"]] ]})
+  tmp_df$G2M_nc <- apply(tmp_df,1,FUN = function(x){tmp_list[[g_G2M]]$nc_slope[tmp_list[[g_G2M]]$gene == x[["gene"]] ]})
+  
+
+  return(tmp_df)
+}
+
+##END of Func Def.
+```
+
+### Kmeans Cl
+
+```{r}
+#Filter by r^2 > 0.5
+para_df <- get_para_df("siControl")
+tmp_df <- para_df %>% subset(subset = G1_beta_rsq >= 0.5 & S_beta_rsq >= 0.5 & G2M_beta_rsq >= 0.5)
+
+#tmp_df[,c(2:7)] <- t(scale(t(as.matrix(tmp_df[,c(2:7)]))))
+
+tmp_df[,c(2:4)] %<>% as.matrix() %>% t() %>% scale() %>% t()
+tmp_df[,c(5:7)] %<>% as.matrix() %>% t() %>% scale() %>% t()
+#create list for saving clustering results
+cl_res_list <- list()
+
+#kmeans try
+library(factoextra)
+library(ComplexHeatmap)
+fviz_nbclust(tmp_df[,c(2:7)],kmeans,k.max = 15,method = "wss")
+set.seed(2021)
+tmp_df.km_res <- kmeans(tmp_df[,c(2:7)],5,nstart = 25)
+#PC
+fviz_cluster(tmp_df.km_res,as.matrix(tmp_df[,c(2:7)]),axes = c(1,2), 
+             labelsize = 0, ellipse = F, show.clust.cent = F, shape = 16) + 
+  theme_classic()
+
+ggplot(data = data.frame(cluster = as.factor(tmp_df.km_res$cluster),tmp_df),
+       aes(x = G1_beta,y = G2M_beta,color = cluster))+
+  geom_point(alpha = 0.5) + 
+  theme_classic()
+#save result
+cl_res_list[["sd_cc"]] <- data.frame(para_df %>% 
+                                       subset(subset = G1_beta_rsq >= 0.5 & S_beta_rsq >= 0.5 & G2M_beta_rsq >= 0.5),
+                                     cluster = tmp_df.km_res$cluster)
+
+#Check Highest Expr
+plot_list <- list()
+for(k in 1:4){
+  plot_list[[i]] <- Heatmap(tmp_df[tmp_df.km_res$cluster == k, 2:7],
+                            cluster_columns = F,cluster_rows  = T, show_row_names = F,
+                            column_title = paste("Cluster",k)) 
+  print(which(colSums(tmp_df[tmp_df.km_res$cluster == k, 2:7]) == 
+                max(colSums(tmp_df[tmp_df.km_res$cluster == k, 2:7]))))
+}
+```
+
+### Seurat Clustering
+
+```{r Clustering Using Lambda etc.}
+#Filter by r^2 > 0.5
+tmp_df <- para_df %>% subset(subset = G1_beta_rsq >= 0.5 & S_beta_rsq >= 0.5 & G2M_beta_rsq >= 0.5) #%>%
+  #data.frame(cluster = cl_res_list$sd_cc$cluster)
 
 
+tmp_df[,c(2:4)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#a
+tmp_df[,c(5:7)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#beta
+tmp_df[,c(8:10)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#lambda
+tmp_df[,c(11:13)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#beta_n
+tmp_df[,c(14:16)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#beta_c
+#Add Connie Regression Result
+require(readr)
+TEMPO_regression_cc <- read_csv("TEMPO-regression_cc.csv")
+tmp_df %<>% left_join(TEMPO_regression_cc[,c(1,2,4,6)], by = "gene")
+tmp_df[, c(23:25)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#regression
+#Using K-means
+fviz_nbclust(tmp_df[,c(2:16,23:25)],kmeans,k.max = 15,method = "wss")
+set.seed(2021)
+tmp_df.km_res <- kmeans(tmp_df[,c(2:16,23:25)],4,nstart = 25)
+#PC
+fviz_cluster(tmp_df.km_res,as.matrix(tmp_df[,c(2:16,23:25)]),axes = c(1,2), 
+             labelsize = 0, ellipse = F, show.clust.cent = F, shape = 16) + 
+  theme_classic()
 
+cl_res_list[["sder_cc"]] <- right_join(by = "gene", para_df, TEMPO_regression_cc) %>%
+  right_join(data.frame(gene = tmp_df$gene,
+                        cluster = tmp_df.km_res$cluster), by = "gene")
+
+#Try Seurat Clustering
+tmp_obj <- CreateSeuratObject(counts = as.data.frame(tmp_df[,2:16], row.names = as.character(tmp_df$gene)) %>% as.matrix() %>% t(),
+                              project = "Gene_clustering") %>% ScaleData(do.scale = F, do.center = F)
+#Using Regression Value
+tmp_obj <- CreateSeuratObject(counts = as.data.frame(tmp_df[,c(2:16,23:25)], row.names = as.character(tmp_df$gene)) %>% as.matrix() %>% t(),
+                              project = "Gene_clustering") %>% ScaleData(do.scale = F, do.center = F)
+
+#tmp_obj %<>% AddMetaData(metadata = data.frame(row.names = tmp_df$gene, cluster_old = tmp_df$cluster))
+
+tmp_obj %<>% RunPCA(features = row.names(tmp_obj@assays[["RNA"]]), npcs = 15)
+
+ElbowPlot(tmp_obj)
+
+tmp_obj %<>% FindNeighbors(dims = 1:13)
+tmp_obj %<>% FindClusters(resolution = 1)
+
+tmp_obj %<>% RunUMAP(dims = 1:13)
+
+DimPlot(tmp_obj, reduction = "umap")
+DoHeatmap(tmp_obj, features = row.names(tmp_obj@assays$RNA)) + NoLegend()
+#export cluster
+cl_res_list[["sde_cc"]] <- right_join(by = "gene", para_df,
+                                      data.frame(gene = tmp_obj@assays[["RNA"]]@data@Dimnames[[2]],
+                                                 cluster = tmp_obj@meta.data[["seurat_clusters"]]))
+#export cluster Regression Value
+cl_res_list[["sder_cc"]] <- right_join(by = "gene", para_df, TEMPO_regression_cc) %>%
+  right_join(data.frame(gene = tmp_obj@assays[["RNA"]]@data@Dimnames[[2]],
+                        cluster = tmp_obj@meta.data[["seurat_clusters"]]), by = "gene")
+
+
+tmp_df2 <- data.frame(old_cluster = tmp_obj@meta.data$cluster_old, cluster_0.8 = tmp_obj@meta.data$RNA_snn_res.0.8) %>% 
+  dplyr::count(old_cluster,cluster_0.8,sort = F)
+
+ggplot(data = tmp_df2, aes(x = old_cluster, y = cluster_0.8, fill = n)) + 
+  geom_tile() + 
+  scale_fill_gradient(low="white", high="blue") +
+  theme_classic()
+
+tmp_df <- cl_res_list$sder_cc[,c(1,2:4,5:7,11:13,8:10,14:16,23,25,27,29)]
+
+tmp_df[,c(2:4)]   %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#a
+tmp_df[,c(5:7)]   %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#beta
+tmp_df[,c(8:10)]  %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#beta_n
+tmp_df[,c(11:13)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#lambda
+tmp_df[,c(14:16)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#beta_c
+tmp_df[,c(17:19)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#gamma
+
+tmp_df[,c(2:4)]   %<>% as.matrix() %>% t() %>% scale() %>% t()#a
+tmp_df[,c(5:7)]   %<>% as.matrix() %>% t() %>% scale() %>% t()#beta
+tmp_df[,c(8:10)]  %<>% as.matrix() %>% t() %>% scale() %>% t()#beta_n
+tmp_df[,c(11:13)] %<>% as.matrix() %>% t() %>% scale() %>% t()#lambda
+tmp_df[,c(14:16)] %<>% as.matrix() %>% t() %>% scale() %>% t()#beta_c
+tmp_df[,c(17:19)] %<>% as.matrix() %>% t() %>% scale() %>% t()#gamma
+
+require(circlize)
+col_fun <- colorRamp2(quantile(unlist(tmp_df[,2:19]),probs = c(0.1,0.5,0.9)), c("#0000FF", "#FFFFFF", "#FF0000"))
+
+Heatmap(matrix = tmp_df[,2:19], cluster_columns = F,cluster_rows  = F, show_row_names = F, col = col_fun,
+        column_order = colnames(tmp_df)[2:19],row_split = as.factor(tmp_df$cluster), 
+        column_split = factor(rep(c("alpha","beta","beta_n","lambda","beta_c","gamma"),each = 3),
+                              levels = c("alpha","beta","beta_n","lambda","beta_c","gamma")))
+
+avg_heatmap(tmp_df[,2:19], cluster = tmp_df$cluster, 
+            col_split = factor(rep(c("alpha","beta","lambda","beta_n","beta_c","gamma"),each = 3),
+                              levels = c("alpha","beta","lambda","beta_n","beta_c","gamma")))
+
+```
 
 
