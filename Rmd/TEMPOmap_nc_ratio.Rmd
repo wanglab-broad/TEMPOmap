@@ -833,19 +833,20 @@ tmp_df <- para_df %>% subset(subset = G1_beta_rsq >= 0.5 & S_beta_rsq >= 0.5 & G
 
 #tmp_df[,c(2:7)] <- t(scale(t(as.matrix(tmp_df[,c(2:7)]))))
 
-tmp_df[,c(2:4)] %<>% as.matrix() %>% t() %>% scale() %>% t()
-tmp_df[,c(5:7)] %<>% as.matrix() %>% t() %>% scale() %>% t()
+tmp_df[,c(2:4)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#a
+tmp_df[,c(5:7)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#beta
+tmp_df[,c(11:13)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#nc
 #create list for saving clustering results
 cl_res_list <- list()
 
 #kmeans try
 library(factoextra)
 library(ComplexHeatmap)
-fviz_nbclust(tmp_df[,c(2:7)],kmeans,k.max = 15,method = "wss")
+fviz_nbclust(tmp_df[,c(2:7,11:13)],kmeans,k.max = 15,method = "wss")
 set.seed(2021)
-tmp_df.km_res <- kmeans(tmp_df[,c(2:7)],5,nstart = 25)
+tmp_df.km_res <- kmeans(tmp_df[,c(2:7,11:13)],5,nstart = 25)
 #PC
-fviz_cluster(tmp_df.km_res,as.matrix(tmp_df[,c(2:7)]),axes = c(1,2), 
+fviz_cluster(tmp_df.km_res,as.matrix(tmp_df[,c(2:7,11:13)]),axes = c(1,2), 
              labelsize = 0, ellipse = F, show.clust.cent = F, shape = 16) + 
   theme_classic()
 
@@ -873,13 +874,12 @@ for(k in 1:4){
 
 ```{r Clustering Using Lambda etc.}
 #Filter by r^2 > 0.5
+para_df <- get_para_df("siControl")
 tmp_df <- para_df %>% subset(subset = G1_beta_rsq >= 0.5 & S_beta_rsq >= 0.5 & G2M_beta_rsq >= 0.5) #%>%
   #data.frame(cluster = cl_res_list$sd_cc$cluster)
 
-
 tmp_df[,c(2:4)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#a
 tmp_df[,c(5:7)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#beta
-#tmp_df[,c(8:10)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#lambda
 tmp_df[,c(11:13)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#nc
 
 #Add Connie Regression Result
@@ -956,16 +956,13 @@ avg_heatmap(tmp_df[,2:19], cluster = tmp_df$cluster,
 ```
 
 ```{r using KD/Ctrl}
-para_df <- left_join(get_para_df("siControl"),get_para_df("siYTHDC1"),by="gene",suffix = c(".C","DC")) 
-tmp_df <- para_df %>% subset(subset = G1_beta_rsq >= 0.5 & S_beta_rsq >= 0.5 & G2M_beta_rsq >= 0.5)
-tmp_df <- para_df %>% subset(subset = G1_beta_rsq >= 0.5 & S_beta_rsq >= 0.5 & G2M_beta_rsq >= 0.5) #%>%
-  #data.frame(cluster = cl_res_list$sd_cc$cluster)
+para_df <- left_join(get_para_df("siControl"),get_para_df("siYTHDC1"),by="gene",suffix = c(".C",".DC")) 
+tmp_df <- para_df %>% subset(subset = G1_beta_rsq.C >= 0.5 & S_beta_rsq.C >= 0.5 & G2M_beta_rsq.C >= 0.5 & G1_beta_rsq.DC >= 0.5 & S_beta_rsq.DC >= 0.5 & G2M_beta_rsq.DC >= 0.5) 
 
 
-tmp_df[,c(2:4)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#a
-tmp_df[,c(5:7)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#beta
-#tmp_df[,c(8:10)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#lambda
-tmp_df[,c(11:13)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#nc
+tmp_df[,c(2:4, 14:16)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#a
+tmp_df[,c(5:7, 17:19)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#beta
+tmp_df[,c(11:13, 23:25)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#nc
 
 #Add Connie Regression Result
 require(readr)
