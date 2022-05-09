@@ -504,7 +504,7 @@ ggplot(res_df[,c(1,2,21,23,25,27)] %>% melt(id.vars = c("gene","Phase")) %>%
 ```{r plot corr}
 require(viridis)
 
-TEMPO_regression <- read_csv("~/Desktop/At_Broad/Subcellular/TEMPO-regression.csv")
+TEMPO_regression <- read_csv("~/Desktop/At_Broad/Subcellular/TEMPO-regression_siControl_new.csv")
 #ctrl & regression
 tmp_df <- left_join(res_list$siControl,TEMPO_regression, by = "gene")
 colnames(tmp_df)[which(colnames(tmp_df) == "slope")] <- "gamma"
@@ -830,19 +830,21 @@ get_para_df <- function(g,tmp_list = res_list){
 #Filter by r^2 > 0.5
 para_df <- get_para_df("siControl")
 tmp_df <- para_df %>% subset(subset = G1_beta_rsq >= 0.5 & S_beta_rsq >= 0.5 & G2M_beta_rsq >= 0.5)
-
+TEMPO_regression_cc <- read_csv("~/Desktop/At_Broad/Subcellular/TEMPO-regression_cc_siControl_new.csv")
+tmp_df <- left_join(tmp_df,TEMPO_regression_cc[,c(2,3,5,7)])
 #tmp_df[,c(2:7)] <- t(scale(t(as.matrix(tmp_df[,c(2:7)]))))
 
 tmp_df[,c(2:4)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#a
 tmp_df[,c(5:7)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#beta
 tmp_df[,c(11:13)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#nc
+tmp_df[,c(14:16)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#gamma
 #create list for saving clustering results
 cl_res_list <- list()
 
 #kmeans try
 library(factoextra)
 library(ComplexHeatmap)
-fviz_nbclust(tmp_df[,c(2:7,11:13)],kmeans,k.max = 15,method = "wss")
+fviz_nbclust(tmp_df[,c(2:7,11:16)],kmeans,k.max = 15,method = "wss")
 set.seed(2021)
 tmp_df.km_res <- kmeans(tmp_df[,c(2:7,11:13)],5,nstart = 25)
 #PC
@@ -876,16 +878,13 @@ for(k in 1:4){
 #Filter by r^2 > 0.5
 para_df <- get_para_df("siControl")
 tmp_df <- para_df %>% subset(subset = G1_beta_rsq >= 0.5 & S_beta_rsq >= 0.5 & G2M_beta_rsq >= 0.5) #%>%
-  #data.frame(cluster = cl_res_list$sd_cc$cluster)
 
 tmp_df[,c(2:4)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#a
 tmp_df[,c(5:7)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#beta
 tmp_df[,c(11:13)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#nc
 
 #Add Connie Regression Result
-require(readr)
-TEMPO_regression_cc <- read_csv("~/Desktop/At_Broad/Subcellular/TEMPO-regression_cc.csv")
-tmp_df %<>% left_join(TEMPO_regression_cc[,c(1,2,4,6)], by = "gene")
+tmp_df %<>% left_join(TEMPO_regression_cc[,c(2,3,5,7)], by = "gene")
 tmp_df[, c(14:16)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#regression
 #Using K-means
 fviz_nbclust(tmp_df[,c(2:7,11:16)],kmeans,k.max = 15,method = "wss")
@@ -896,7 +895,7 @@ fviz_cluster(tmp_df.km_res,as.matrix(tmp_df[,c(2:7,11:16)]),axes = c(1,2),
              labelsize = 0, ellipse = F, show.clust.cent = F, shape = 16) + 
   theme_classic()
 
-cl_res_list[["sder_cc"]] <- right_join(by = "gene", para_df, TEMPO_regression_cc) %>%
+cl_res_list[["sder_cc_km"]] <- right_join(by = "gene", para_df, TEMPO_regression_cc) %>%
   right_join(data.frame(gene = tmp_df$gene,
                         cluster = tmp_df.km_res$cluster), by = "gene")
 
@@ -934,7 +933,7 @@ ggplot(data = tmp_df2, aes(x = old_cluster, y = cluster_0.8, fill = n)) +
   scale_fill_gradient(low="white", high="blue") +
   theme_classic()
 
-tmp_df <- cl_res_list$sder_cc[,c(1,2:4,5:7,11:13,14,16,18,20)]
+tmp_df <- cl_res_list$sder_cc[,c(1,2:4,5:7,11:13,15,17,19,21)]
 
 tmp_df[,c(2:4)]   %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#a
 tmp_df[,c(5:7)]   %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#beta
@@ -949,42 +948,36 @@ Heatmap(matrix = tmp_df[,2:13], cluster_columns = F,cluster_rows  = F, show_row_
         column_split = factor(rep(c("alpha","beta","nc_slope","gamma"),each = 3),
                               levels = c("alpha","beta","nc_slope","gamma")))
 
-avg_heatmap(tmp_df[,2:19], cluster = tmp_df$cluster, 
-            col_split = factor(rep(c("alpha","beta","lambda","beta_n","beta_c","gamma"),each = 3),
-                              levels = c("alpha","beta","lambda","beta_n","beta_c","gamma")))
 
 ```
 
 ```{r using KD/Ctrl}
+#Add Connie Regression Result
+require(readr)
+TEMPO_regression_cc <- read_csv("~/Desktop/At_Broad/Subcellular/TEMPO-regression_cc_siControl_new.csv")
+TEMPO_regression_cc_DC <- read_csv("~/Desktop/At_Broad/Subcellular/TEMPO-regression_cc_siYTHDC1_new.csv")
+
 para_df <- left_join(get_para_df("siControl"),get_para_df("siYTHDC1"),by="gene",suffix = c(".C",".DC")) 
 tmp_df <- para_df %>% subset(subset = G1_beta_rsq.C >= 0.5 & S_beta_rsq.C >= 0.5 & G2M_beta_rsq.C >= 0.5 & G1_beta_rsq.DC >= 0.5 & S_beta_rsq.DC >= 0.5 & G2M_beta_rsq.DC >= 0.5) 
 
+tmp_df %<>% left_join(TEMPO_regression_cc[,c(2,3,5,7)], by = "gene")
+colnames(tmp_df)[26:28] <- c("G1_slope.C","S_slope.C","G2M_slope.C")
+tmp_df %<>% left_join(TEMPO_regression_cc_DC[,c(2,3,5,7)], by = "gene")
+colnames(tmp_df)[29:31] <- c("G1_slope.DC","S_slope.DC","G2M_slope.DC")
+#remove beta_rsq
+tmp_df <- tmp_df[-c(8:10,20:22)]
+tmp_df2 <- tmp_df
 
-tmp_df[,c(2:4, 14:16)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#a
-tmp_df[,c(5:7, 17:19)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#beta
-tmp_df[,c(11:13, 23:25)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#nc
+tmp_df[,c(2:4, 11:13)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#a
+tmp_df[,c(5:7, 14:16)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#beta
+tmp_df[,c(8:10,17:19)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#nc
+tmp_df[, c(20:25)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#regression
 
-#Add Connie Regression Result
-require(readr)
-TEMPO_regression_cc <- read_csv("~/Desktop/At_Broad/Subcellular/TEMPO-regression_cc.csv")
-tmp_df %<>% left_join(TEMPO_regression_cc[,c(1,2,4,6)], by = "gene")
-tmp_df[, c(14:16)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#regression
-#Using K-means
-fviz_nbclust(tmp_df[,c(2:7,11:16)],kmeans,k.max = 15,method = "wss")
-set.seed(2021)
-tmp_df.km_res <- kmeans(tmp_df[,c(2:7,11:16)],4,nstart = 25)
-#PC
-fviz_cluster(tmp_df.km_res,as.matrix(tmp_df[,c(2:7,11:16)]),axes = c(1,2), 
-             labelsize = 0, ellipse = F, show.clust.cent = F, shape = 16) + 
-  theme_classic()
 
-cl_res_list[["sder_cc"]] <- right_join(by = "gene", para_df, TEMPO_regression_cc) %>%
-  right_join(data.frame(gene = tmp_df$gene,
-                        cluster = tmp_df.km_res$cluster), by = "gene")
 
 #Try Seurat Clustering
 #Using Regression Value
-tmp_obj <- CreateSeuratObject(counts = as.data.frame(tmp_df[,c(2:7,11:16)], 
+tmp_obj <- CreateSeuratObject(counts = as.data.frame(tmp_df[,c(2:25)], 
                                                      row.names = as.character(tmp_df$gene)) %>% as.matrix() %>% t(),
                               project = "Gene_clustering") %>% ScaleData(do.scale = F, do.center = F)
 
@@ -994,8 +987,8 @@ tmp_obj %<>% RunPCA(features = row.names(tmp_obj@assays[["RNA"]]), npcs = 15)
 
 ElbowPlot(tmp_obj)
 
-tmp_obj %<>% FindNeighbors(dims = 1:10)
-tmp_obj %<>% FindClusters(resolution = 0.6)
+tmp_obj %<>% FindNeighbors(dims = 1:14)
+tmp_obj %<>% FindClusters(resolution = 0.8)
 
 tmp_obj %<>% RunUMAP(dims = 1:10)
 
@@ -1003,32 +996,51 @@ DimPlot(tmp_obj, reduction = "umap")
 DoHeatmap(tmp_obj, features = row.names(tmp_obj@assays$RNA)) + NoLegend()
 
 #export cluster Regression Value
-cl_res_list[["sder_cc"]] <- right_join(by = "gene", para_df, TEMPO_regression_cc) %>%
+cl_res_list[["sder_cc_dc"]] <- tmp_df %>%
   right_join(data.frame(gene = tmp_obj@assays[["RNA"]]@data@Dimnames[[2]],
                         cluster = tmp_obj@meta.data[["seurat_clusters"]]), by = "gene")
 
+tmp_df <- cl_res_list$sder_cc_dc
 
-tmp_df2 <- data.frame(old_cluster = tmp_obj@meta.data$cluster_old, cluster_0.8 = tmp_obj@meta.data$RNA_snn_res.0.8) %>% 
-  dplyr::count(old_cluster,cluster_0.8,sort = F)
+col_fun <- colorRamp2(quantile(unlist(tmp_df[,2:25]),probs = c(0.1,0.5,0.9)), c("#0000FF", "#FFFFFF", "#FF0000"))
 
-ggplot(data = tmp_df2, aes(x = old_cluster, y = cluster_0.8, fill = n)) + 
+tmp_df2 <- tmp_df[,c(1,2:4,11:13,5:7,14:16,8:10,17:19,20:25,26)]
+
+Heatmap(matrix = tmp_df2[,2:25], cluster_columns = F,cluster_rows  = F, show_row_names = F, col = col_fun,
+        row_split = as.factor(tmp_df2$cluster), 
+        column_split = factor(rep(c("alpha","beta","nc_slope","gamma"),each = 6),
+                              levels = c("alpha","beta","nc_slope","gamma")))
+
+```
+
+### Confusion Mat.
+
+```{r }
+tmp_df2 <- left_join(cl_res_list$sder_cc_dc,cl_res_list$sder_cc, by = "gene", suffix = c(".dc",".c")) %>%
+  group_by(cluster.dc, cluster.c) %>% summarise(value = n())
+
+ggplot(data = tmp_df2, aes(x = cluster.c, y = cluster.dc, fill = value)) + 
   geom_tile() + 
+  geom_text(aes(label = value)) + 
   scale_fill_gradient(low="white", high="blue") +
   theme_classic()
 
-tmp_df <- cl_res_list$sder_cc[,c(1,2:4,5:7,11:13,14,16,18,20)]
+tmp_df2 <- left_join(cl_res_list$sder_cc,cl_res_list$sder_cc_km, by = "gene", suffix = c(".c",".km")) %>%
+  group_by(cluster.c, cluster.km) %>% summarise(value = n())
 
-tmp_df[,c(2:4)]   %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#a
-tmp_df[,c(5:7)]   %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#beta
-tmp_df[,c(8:10)]  %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#nc
-tmp_df[,c(11:13)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#gamma
+ggplot(data = tmp_df2, aes(x = cluster.c, y = cluster.km, fill = value)) + 
+  geom_tile() + 
+  geom_text(aes(label = value)) + 
+  scale_fill_gradient(low="white", high="blue") +
+  theme_classic()
 
-require(circlize)
-col_fun <- colorRamp2(quantile(unlist(tmp_df[,2:13]),probs = c(0.1,0.5,0.9)), c("#0000FF", "#FFFFFF", "#FF0000"))
+tmp_df2 <- left_join(cl_res_list$sder_cc,gene_cl_res, by = "gene", suffix = c(".para",".cor")) %>%
+  group_by(cluster.para, cluster.cor) %>% summarise(value = n())
 
-Heatmap(matrix = tmp_df[,2:13], cluster_columns = F,cluster_rows  = F, show_row_names = F, col = col_fun,
-        column_order = colnames(tmp_df)[2:13],row_split = as.factor(tmp_df$cluster), 
-        column_split = factor(rep(c("alpha","beta","nc_slope","gamma"),each = 3),
-                              levels = c("alpha","beta","nc_slope","gamma")))
+ggplot(data = tmp_df2, aes(x = cluster.para, y = cluster.cor, fill = value)) + 
+  geom_tile() + 
+  geom_text(aes(label = value)) + 
+  scale_fill_gradient(low="white", high="blue") +
+  theme_classic()
 
 ```
