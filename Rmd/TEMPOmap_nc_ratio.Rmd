@@ -341,7 +341,7 @@ ggplot(data = data.frame(label = starmap_normalized@meta.data$KD_label_new,
        aes(x = label, y = log2(1+YTHDC1), fill = label))+
   ylim(0,quantile(tmp_vec,probs = 0.99))+
   #geom_violin(alpha = 0.5) +
-  geom_boxplot(width=0.1, color = "black") + 
+  geom_boxplot(width=0.1, color = "black", notch = T) + 
   theme_classic()
 
 
@@ -1044,3 +1044,98 @@ ggplot(data = tmp_df2, aes(x = cluster.para, y = cluster.cor, fill = value)) +
   theme_classic()
 
 ```
+
+## Figures
+
+### m6A Boxplot
+
+```{r}
+#m6A Label
+m6A_label <- read_csv("~/Desktop/At_Broad/Subcellular/m6A_new_label.csv") %>% .[,1:3]
+m6A_label[["Label"]] <- apply(m6A_label,1,
+                              FUN = function(x){
+                                if(x[["m6A"]] == "Y") "m6A"
+                                else if(x[["non-m6A"]] == "Y") "non_m6A"
+                                else "na"
+                                  })
+
+
+
+tmp_df <- get_para_df("siControl")
+tmp_df %<>% subset(subset = G1_beta_rsq >= 0.5 & S_beta_rsq >= 0.5 & G2M_beta_rsq >= 0.5)
+tmp_df %<>% left_join(m6A_label, by = c("gene" = "Gene")) %>% left_join(TEMPO_regression_cc,by = "gene") 
+
+colnames(tmp_df)[c(18,20,22)] <- c("G1_gamma","S_gamma","G2M_gamma")
+
+library(ggsignif)
+
+plot_list <- list()
+for(i in c("alpha","beta","nc","gamma")){
+  tmp_vec <- quantile(tmp_df[,paste0(c("G1","S","G2M"),"_",i)] %>% unlist(), probs = c(0.01,0.75,0.99))
+  for(j in c("G1","S","G2M")){
+    tmp_obj <- wilcox.test(x = tmp_df[,paste0(j,"_",i)][tmp_df$Label == "m6A"],
+                           y = tmp_df[,paste0(j,"_",i)][tmp_df$Label == "non_m6A"])
+    plot_list[[paste0(j,"_",i)]] <- ggplot(data = data.frame(value = tmp_df[,paste0(j,"_",i)],
+                                                             group = tmp_df$Label) %>% subset(subset = group != "na"),
+                                           aes(x = group, y = value, fill = group)) + 
+      geom_boxplot(width=0.7, notch = TRUE, alpha = 0.5) + 
+      #geom_signif(comparisons = list(c("m6A", "non_m6A")), 
+      #        map_signif_level = T, y_position = tmp_vec[2], tip_length = 0, vjust=0.4) + 
+      ylim(tmp_vec[c(1,3)]) + 
+      theme_classic() + labs(title = paste0(j,"_",i)) + 
+      xlab(paste0("pval ",tmp_obj$p.value %>% formatC(format = "e", digits = 1))) +
+      theme(legend.position = "none") +
+      scale_fill_manual(values = c("#7CAE02","#F8766D"))
+      
+  }
+}
+
+ggarrange(plotlist = plot_list,ncol = 3, nrow = 4)
+
+
+```
+
+### nc_ratio comparison 
+
+```{r }
+
+tmp_df <- data.frame(gene = gene_list)
+
+for(j in levels(starmap_raw_norm@meta.data$sample)){
+  for(k in c("siControl","siYTHDC1")){
+      tmp_vec <- starmap_raw_norm@meta.data$sample == j & 
+        starmap_raw_norm@meta.data$KD_label_new == k
+      tmp_df[[paste0(j,"_",k,"_nc")]] <- apply(tmp_df,1,
+                                         FUN = function(x){
+                                           sum(starmap_raw_norm@assays$nucleus@data[x[["gene"]], tmp_vec]) /
+                                              sum(starmap_raw_norm@assays$cytoplasm@data[x[["gene"]], tmp_vec])
+                                         })
+      }
+  tmp_df[[paste0("logfc_",j)]] <- log2(tmp_df[[paste0(j,"_","siYTHDC1","_nc")]]/tmp_df[[paste0(j,"_","siControl","_nc")]])
+}
+
+
+tmp_df <- left_join(tmp_df,DC1_target,by = "gene")
+
+plot_list <- list()
+for(i in levels(starmap_raw_norm@meta.data$sample)){
+  tmp_obj <- wilcox.test(x = tmp_df[[paste0("logfc_",i)]][tmp_df$Label_p == "DCtarget_p"], 
+                         y = tmp_df[[paste0("logfc_",i)]][tmp_df$Label_p == "non-target"],
+                          alternative = "greater")
+  j <- quantile(tmp_df[[paste0("logfc_",i)]][tmp_df$Label_p %in% c("DCtarget_p","non-target")],probs = c(0.01,0.99)) %>%
+    abs() %>% mean()
+  plot_list[[i]] <- ggplot(tmp_df %>% subset(subset = Label_p %in% c("DCtarget_p","non-target")),
+                           aes_string(x = paste0("logfc_",i), color = "Label_p")) + 
+    geom_step(aes(y=..y..),stat="ecdf") +labs(title = paste(i,"p:",format(tmp_obj$p.value, digits=3))) + 
+    xlim(-j,j) +
+    theme_classic()
+}
+
+ggarrange(plotlist = plot_list,ncol = 3, nrow = 2)
+
+
+
+```
+
+
+
