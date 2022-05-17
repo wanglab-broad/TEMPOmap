@@ -399,7 +399,7 @@ for(i in c("G1","S","G2M")){
                                      nc_adj_r_sq = summary(lm_res)[["adj.r.squared"]]))
                          })
     tmp_df <- do.call(rbind, tmp_list)
-    res_df[["nc_slope"]] <- as.numeric(tmp_df[,"nc_ratio"])
+    res_df[["nc_slope"]] <- -1 * as.numeric(tmp_df[,"nc_ratio"])
     res_df[["nc_r_sq"]] <- as.numeric(tmp_df[,"nc_r_sq"])
     res_df[["nc_adj_r_sq"]] <- as.numeric(tmp_df[,"nc_adj_r_sq"])
     res_list[[paste(k,i,sep = "_")]] <- res_df
@@ -457,7 +457,7 @@ for(k in c("siControl","siYTHDC1")){
                                      nc_adj_r_sq = summary(lm_res)[["adj.r.squared"]]))
                          })
     tmp_df <- do.call(rbind, tmp_list)
-    res_df[["nc_slope"]] <- as.numeric(tmp_df[,"nc_ratio"])
+    res_df[["nc_slope"]] <- -1 * as.numeric(tmp_df[,"nc_ratio"])
     res_df[["nc_r_sq"]] <- as.numeric(tmp_df[,"nc_r_sq"])
     res_df[["nc_adj_r_sq"]] <- as.numeric(tmp_df[,"nc_adj_r_sq"])
   res_list[[k]] <- res_df
@@ -768,9 +768,11 @@ dev.off()
 
 ```
 
+### Cluster boxplot
+
 ```{r }
 #Cor cluster
-res_df <- left_join(res_list$siControl,gene_cl_res,by = "gene")
+res_df <- left_join(cl_res_list$sder_cc,res_list$siControl,by = "gene")
 res_df <- left_join(res_df,TEMPO_regression,by = "gene")
 res_df$cluster <- as.factor(res_df$cluster)
 colnames(res_df)[which(colnames(res_df) == "slope")] <- "gamma"
@@ -778,8 +780,10 @@ plot_list <- list()
 for(i in c("alpha","beta","gamma","nc_slope")){
   tmp_obj <- aov(res_df[["alpha"]]~res_df[["cluster"]]) %>% summary()
   plot_list[[i]] <- ggplot(res_df,aes_string(x = "cluster", y = i, fill = "cluster"))+
-    geom_violin() + ylim(quantile(res_df[[i]], probs = c(0,0.99))) + 
-    geom_boxplot(width = 0.1, fill = "white") + theme_classic() +
+    geom_boxplot(width=0.7, notch = TRUE, alpha = 0.5) + 
+    ylim(quantile(res_df[[i]], probs = c(0,0.99))) + 
+    #geom_boxplot(width = 0.1, fill = "white") + 
+    theme_classic() +
     labs(title = paste(i,"ANOVA Pr:",tmp_obj[[1]][["Pr(>F)"]][1]))
 }
 
@@ -879,6 +883,8 @@ for(k in 1:4){
 para_df <- get_para_df("siControl")
 tmp_df <- para_df %>% subset(subset = G1_beta_rsq >= 0.5 & S_beta_rsq >= 0.5 & G2M_beta_rsq >= 0.5) #%>%
 
+#tmp_df[,c(11:13)] <- tmp_df[,c(11:13)] * -1
+
 tmp_df[,c(2:4)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#a
 tmp_df[,c(5:7)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#beta
 tmp_df[,c(11:13)] %<>% unlist() %>%  scale() %>% matrix(ncol = 3)#nc
@@ -912,7 +918,7 @@ tmp_obj %<>% RunPCA(features = row.names(tmp_obj@assays[["RNA"]]), npcs = 15)
 ElbowPlot(tmp_obj)
 
 tmp_obj %<>% FindNeighbors(dims = 1:10)
-tmp_obj %<>% FindClusters(resolution = 0.6)
+tmp_obj %<>% FindClusters(resolution = 1)
 
 tmp_obj %<>% RunUMAP(dims = 1:10)
 
@@ -1091,6 +1097,31 @@ for(i in c("alpha","beta","nc","gamma")){
 }
 
 ggarrange(plotlist = plot_list,ncol = 3, nrow = 4)
+
+
+tmp_df <- res_list$siControl[,c(1,6,2,3,21)]
+tmp_df %<>% subset(subset = beta_r_sq >= 0.5)
+tmp_df %<>% left_join(m6A_label, by = c("gene" = "Gene")) %>% left_join(TEMPO_regression[,c(2,3)],by = "gene") 
+
+colnames(tmp_df)[c(9)] <- c("gamma")
+
+library(ggsignif)
+
+plot_list <- list()
+for(i in c("alpha","beta","nc_slope","gamma")){
+    tmp_obj <- wilcox.test(x = tmp_df[,paste0(i)][tmp_df$Label == "m6A"],
+                           y = tmp_df[,paste0(i)][tmp_df$Label == "non_m6A"])
+    plot_list[[paste0(i)]] <- ggplot(data = data.frame(value = tmp_df[,paste0(i)],
+                                                             group = tmp_df$Label) %>% subset(subset = group != "na"),
+                                           aes(x = group, y = value, fill = group)) + 
+      geom_boxplot(width=0.7, notch = TRUE, alpha = 0.5) + 
+      theme_classic() + labs(title = paste0(i)) + 
+      xlab(paste0("pval ",tmp_obj$p.value %>% formatC(format = "e", digits = 1))) +
+      theme(legend.position = "none") +
+      scale_fill_manual(values = c("#7CAE02","#F8766D"))
+}
+
+ggarrange(plotlist = plot_list,ncol = 2, nrow = 2)
 
 
 ```
