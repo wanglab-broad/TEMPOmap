@@ -1,0 +1,98 @@
+/broad/software/scripts/useuse: line 4: /broad/software/dotkit/35794858:t/.dk_init: No such file or directory
+{Error using gpuDevice (line 26)
+There is a problem with the graphics driver or with this GPU device. Be sure
+that you have a <a
+href="matlab:web('http://www.mathworks.com/gpudevice','-browser')">supported
+GPU</a> and that the <a
+href="matlab:web('http://www.mathworks.com/gpudriver','-browser')">latest
+driver</a> is installed.
+
+Error in task_270 (line 133)
+reset(gpuDevice)
+
+Error in run (line 91)
+evalin('caller', strcat(script, ';'));
+
+Caused by:
+    The CUDA driver could not be loaded. The library name used was
+    'libcuda.so.1'. The error was:
+    libcuda.so.1: cannot open shared object file: No such file or directory
+} 
+MATLAB: management.cpp:712: find: Assertion `find: no active context for type 'mcos::COSContexI_Proxy'' failed.
+
+--------------------------------------------------------------------------------
+              Assertion detected at Fri Sep 16 10:17:51 2022 +0000
+--------------------------------------------------------------------------------
+
+Configuration:
+  Crash Decoding           : Disabled - No sandbox or build area path
+  Crash Mode               : continue (default)
+  Default Encoding         : US-ASCII
+  Deployed                 : false
+  GNU C Library            : 2.17 stable
+  Graphics Driver          : Unknown software 
+  Graphics card 1          : 0x102b ( 0x102b ) 0x522 Version 0.0.0.0 (0-0-0)
+  Java Version             : Java 1.8.0_181-b13 with Oracle Corporation Java HotSpot(TM) 64-Bit Server VM mixed mode
+  MATLAB Architecture      : glnxa64
+  MATLAB Entitlement ID    : 6252559
+  MATLAB Root              : /broad/software/nonfree/Linux/redhat_7_x86_64/pkgs/matlab_2019a
+  MATLAB Version           : 9.6.0.1072779 (R2019a)
+  OpenGL                   : software
+  Operating System         : "Red Hat Enterprise Linux Server release 7.9 (Maipo)"
+  Process ID               : 34421
+  Processor ID             : x86 Family 6 Model 85 Stepping 7, GenuineIntel
+  Session Key              : 95a89e5d-f08f-44f8-9bce-9ac73ee16195
+  Static TLS mitigation    : Disabled: Unable to open display
+  Window System            : No active display
+
+Fault Count: 1
+
+
+Assertion in find at management.cpp line 712:
+find: no active context for type 'mcos::COSContexI_Proxy'
+
+Register State (captured):
+  RAX = 0000000000000000  RBX = 00002af77fb9bd08
+  RCX = 0000000000000000  RDX = 00002af77fb8ce00
+  RSP = 00007ffdc6f32ac0  RBP = 00007ffdc6f32e80
+  RSI = 00002af77fb543c6  RDI = 00007ffdc6f32ad0
+
+   R8 = 00007ffdc6f32d95   R9 = 00007ffdc6f32d95
+  R10 = 00002af77c7a83e0  R11 = 0000000500000000
+  R12 = 00002af77fbabd98  R13 = 00007ffdc6f33720
+  R14 = 00002af77c7ca86c  R15 = 00002af77c7cb7cb
+
+  RIP = 00002af77faa41ae  EFL = 0000000000000001
+
+   CS = 7a88   FS = 7c7a   GS = 2af7
+
+Stack Trace (captured):
+[  0] 0x00002af77fa9b713 /broad/software/nonfree/Linux/redhat_7_x86_64/pkgs/matlab_2019a/bin/glnxa64/libmwfl.so+00829203
+[  1] 0x00002af77fa9b90c /broad/software/nonfree/Linux/redhat_7_x86_64/pkgs/matlab_2019a/bin/glnxa64/libmwfl.so+00829708 _ZN10foundation4core4diag15stacktrace_base7captureEm+00000028
+[  2] 0x00002af77faa053f /broad/software/nonfree/Linux/redhat_7_x86_64/pkgs/matlab_2019a/bin/glnxa64/libmwfl.so+00849215
+[  3] 0x00002af77faa06a0 /broad/software/nonfree/Linux/redhat_7_x86_64/pkgs/matlab_2019a/bin/glnxa64/libmwfl.so+00849568
+[  4] 0x00002af77c7ba5ce /broad/software/nonfree/Linux/redhat_7_x86_64/pkgs/matlab_2019a/bin/glnxa64/libmwfoundation_usm.so+00075214
+[  5] 0x00002af77c7c7288 /broad/software/nonfree/Linux/redhat_7_x86_64/pkgs/matlab_2019a/bin/glnxa64/libmwfoundation_usm.so+00127624 _ZN10foundation3usm6DetailINS0_5scope3MvmEE4findEmRKSt9type_info+00000136
+[  6] 0x00002af7a02cb23a /broad/software/nonfree/Linux/redhat_7_x86_64/pkgs/matlab_2019a/bin/glnxa64/libmwmcos_impl.so+02925114
+[  7] 0x00002af7a02c9e0d /broad/software/nonfree/Linux/redhat_7_x86_64/pkgs/matlab_2019a/bin/glnxa64/libmwmcos_impl.so+02919949
+[  8] 0x00002af7a049e181 /broad/software/nonfree/Linux/redhat_7_x86_64/pkgs/matlab_2019a/bin/glnxa64/libmwmcos_impl.so+04837761
+[  9] 0x00002af7866e44c9 /broad/software/nonfree/Linux/redhat_7_x86_64/pkgs/matlab_2019a/bin/glnxa64/libmwmcos.so+00267465 _ZN4mcos12COSInterface28getObjectBeingDestroyedEventEv+00000025
+[ 10] 0x00002af7a02e9f4f /broad/software/nonfree/Linux/redhat_7_x86_64/pkgs/matlab_2019a/bin/glnxa64/libmwmcos_impl.so+03051343
+[ 11] 0x00002af7a02eb03a /broad/software/nonfree/Linux/redhat_7_x86_64/pkgs/matlab_2019a/bin/glnxa64/libmwmcos_impl.so+03055674
+[ 12] 0x00002af7a02e204c /broad/software/nonfree/Linux/redhat_7_x86_64/pkgs/matlab_2019a/bin/glnxa64/libmwmcos_impl.so+03018828
+[ 13] 0x00002af7866e5665 /broad/software/nonfree/Linux/redhat_7_x86_64/pkgs/matlab_2019a/bin/glnxa64/libmwmcos.so+00271973 _ZN4mcos15COSInterfacePtrD1Ev+00000117
+[ 14] 0x00002af78a45f9b4 /broad/software/nonfree/Linux/redhat_7_x86_64/pkgs/matlab_2019a/bin/glnxa64/libmwm_interpreter.so+01075636 _ZN9MathWorks10MException18MExceptionEnvelopeD2Ev+00000068
+[ 15] 0x00002af78a45fa41 /broad/software/nonfree/Linux/redhat_7_x86_64/pkgs/matlab_2019a/bin/glnxa64/libmwm_interpreter.so+01075777 _ZN9MathWorks10MException18MExceptionEnvelopeD0Ev+00000017
+[ 16] 0x00002af83e079331 /broad/software/nonfree/Linux/redhat_7_x86_64/pkgs/matlab_2019a/bin/glnxa64/builtins/parallel_gpu_libs/../../../../bin/glnxa64/libmwgpushim.so+00070449
+[ 17] 0x00002af77dcd3ce9                                   /lib64/libc.so.6+00236777
+[ 18] 0x00002af77dcd3d37                                   /lib64/libc.so.6+00236855
+[ 19] 0x00002af77dcbc55c                                   /lib64/libc.so.6+00140636 __libc_start_main+00000252
+[ 20] 0x000000000040731a /broad/software/nonfree/Linux/redhat_7_x86_64/pkgs/matlab_2019a/bin/glnxa64/MATLAB+00029466
+[ 21] 0x0000000000000000                                   <unknown-module>+00000000
+
+** This crash report has been saved to disk as /home/unix/wangk/matlab_crash_dump.34421-1 **
+
+
+
+MATLAB is exiting because of fatal error
+/var/spool/uger-8.5.5/uger-c031/job_scripts/35794858: line 11: 34421 Killed                  matlab -nodisplay -nosplash -nodesktop -r $command

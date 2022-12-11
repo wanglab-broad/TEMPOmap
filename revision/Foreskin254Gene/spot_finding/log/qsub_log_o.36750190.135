@@ -1,0 +1,331 @@
+Current time : 09:25:58
+
+                            < M A T L A B (R) >
+                  Copyright 1984-2019 The MathWorks, Inc.
+                  R2019a (9.6.0.1072779) 64-bit (glnxa64)
+                               March 8, 2019
+
+ 
+To get started, type doc.
+For product information, visit www.mathworks.com.
+ 
+
+	Non-Degree Granting Education License -- for use at non-degree granting, nonprofit,
+	educational organizations only.  Not for government, commercial, or other organizational use.
+
+
+tile =
+
+    'Position135'
+
+
+run_id =
+
+    '2022-10-24'
+
+
+curr_data_dir =
+
+    'Position135'
+
+
+curr_out_path =
+
+    '/stanley/WangLab/Data/Processed/2022-10-15-Rena-SkinCulture254-gene/output/2022-10-24/Position135'
+
+Pipeline Obj is generated...
+====Loading raw images====
+Loading round 1...[time = 17.04 s]
+Loading round 2...[time = 17.47 s]
+Loading round 3...[time = 23.44 s]
+Loading round 4...[time = 15.48 s]
+Loading round 5...[time = 17.48 s]
+Raw image as 5-D array
+====Swap Channels====
+Channel 2 <==> Channel 3
+====Histogram Equalization====
+Method: inter_round
+Equalizing channel 1
+Equalizing channel 2
+Equalizing channel 3
+Equalizing channel 4
+====Histogram Equalization====
+Method: intra_round
+Equalizing round 1
+Equalizing round 2
+Equalizing round 3
+Equalizing round 4
+Equalizing round 5
+====Morphological Reconstruction====
+Method: 2d
+Processing Round 1...[time = 51.53 s]
+Processing Round 2...[time = 47.15 s]
+Processing Round 3...[time = 47.80 s]
+Processing Round 4...[time = 47.54 s]
+Processing Round 5...[time = 47.45 s]
+====Global Registration====
+DFT register finished [time=37.667068]
+DFT apply finished [time=175.015463]
+Round 2 vs. Round 1 finished [time=213.488582]
+Shifted by 104  -12    0
+DFT register finished [time=37.981812]
+DFT apply finished [time=173.158668]
+Round 3 vs. Round 1 finished [time=212.006738]
+Shifted by 105  -14   -1
+DFT register finished [time=37.856539]
+DFT apply finished [time=173.044925]
+Round 4 vs. Round 1 finished [time=211.722991]
+Shifted by 110  -11   -1
+DFT register finished [time=37.903547]
+DFT apply finished [time=173.275892]
+Round 5 vs. Round 1 finished [time=211.985857]
+Shifted by 109  -15   -1
+
+NgpuBlock =
+
+     4
+
+
+gpu_idx =
+
+  2x2 int16 matrix
+
+      1   1024
+      1   1024
+
+Pipeline Obj is generated...
+====Local (Non-rigid) Registration====
+[time = 0.00 s]
+Round 2 vs. Round 1...[time = 1417.59 s]
+Round 3 vs. Round 1...[time = 1427.10 s]
+Round 4 vs. Round 1...[time = 1447.07 s]
+Round 5 vs. Round 1...[time = 1478.43 s]
+====Load Codebook====
+doReverse: 1
+====Spot Finding====
+Method: max3d
+Reference round: 1
+Number of spots found by max3d: 4645
+[time = 25.83 s]
+====Reads Extraction====
+voxel size: 2 x 2 x 1
+Geting color sequence for each voxel...
+
+Geting max color...
+652 
+Decoding...
+Starting parallel pool (parpool) using the 'local' profile ...
+Connected to the parallel pool (number of workers: 1).
+
+Number of spots were dropped because of multi-max color: 652
+====Reads Filtration====
+mode: regular
+Base in both ends: C --- C
+1.000000 [3993 / 3993] percent of reads are below score thresh 5.000000e-01
+Filtration Statistics:
+0.922364 [3683 / 3993] percent of good reads are CNNNNNC
+0.922364 [3683 / 3993] percent of good reads are in codebook
+1.000000 [3683 / 3683] percent of CNNNNNC reads are in codebook
+
+block_offsets =
+
+  1x3 int16 row vector
+
+   0   0   0
+
+
+block_offsets =
+
+  1x3 int16 row vector
+
+   0   0   0
+
+====Block 1 Finished [time=5936.628568]====
+gpu_idx =
+
+  2x2 int16 matrix
+
+      1   1024
+   1025   2048
+
+Pipeline Obj is generated...
+====Local (Non-rigid) Registration====
+[time = 0.00 s]
+Round 2 vs. Round 1...[time = 1494.71 s]
+Round 3 vs. Round 1...[time = 1486.21 s]
+Round 4 vs. Round 1...[time = 1463.44 s]
+Round 5 vs. Round 1...[time = 1456.84 s]
+====Load Codebook====
+doReverse: 1
+====Spot Finding====
+Method: max3d
+Reference round: 1
+Number of spots found by max3d: 4550
+[time = 24.65 s]
+====Reads Extraction====
+voxel size: 2 x 2 x 1
+Geting color sequence for each voxel...
+
+Geting max color...
+657 
+Decoding...
+IdleTimeout has been reached.
+Parallel pool using the 'local' profile is shutting down.
+Starting parallel pool (parpool) using the 'local' profile ...
+Connected to the parallel pool (number of workers: 1).
+
+Number of spots were dropped because of multi-max color: 657
+====Reads Filtration====
+mode: regular
+Base in both ends: C --- C
+1.000000 [3893 / 3893] percent of reads are below score thresh 5.000000e-01
+Filtration Statistics:
+0.919599 [3580 / 3893] percent of good reads are CNNNNNC
+0.919342 [3579 / 3893] percent of good reads are in codebook
+0.999721 [3579 / 3580] percent of CNNNNNC reads are in codebook
+
+block_offsets =
+
+  1x3 int16 row vector
+
+   1024      0      0
+
+
+block_offsets =
+
+  1x3 int16 row vector
+
+   1024      0      0
+
+====Block 2 Finished [time=6045.770375]====
+gpu_idx =
+
+  2x2 int16 matrix
+
+   1025   2048
+      1   1024
+
+Pipeline Obj is generated...
+====Local (Non-rigid) Registration====
+[time = 0.00 s]
+Round 2 vs. Round 1...[time = 1446.72 s]
+Round 3 vs. Round 1...[time = 1444.94 s]
+Round 4 vs. Round 1...[time = 1430.37 s]
+Round 5 vs. Round 1...[time = 1436.59 s]
+====Load Codebook====
+doReverse: 1
+====Spot Finding====
+Method: max3d
+Reference round: 1
+Number of spots found by max3d: 3303
+[time = 24.30 s]
+====Reads Extraction====
+voxel size: 2 x 2 x 1
+Geting color sequence for each voxel...
+
+Geting max color...
+46 
+Decoding...
+IdleTimeout has been reached.
+Parallel pool using the 'local' profile is shutting down.
+Starting parallel pool (parpool) using the 'local' profile ...
+Connected to the parallel pool (number of workers: 1).
+
+Number of spots were dropped because of multi-max color: 46
+====Reads Filtration====
+mode: regular
+Base in both ends: C --- C
+1.000000 [3257 / 3257] percent of reads are below score thresh 5.000000e-01
+Filtration Statistics:
+0.904513 [2946 / 3257] percent of good reads are CNNNNNC
+0.904513 [2946 / 3257] percent of good reads are in codebook
+1.000000 [2946 / 2946] percent of CNNNNNC reads are in codebook
+
+block_offsets =
+
+  1x3 int16 row vector
+
+      0   1024      0
+
+
+block_offsets =
+
+  1x3 int16 row vector
+
+      0   1024      0
+
+====Block 3 Finished [time=5885.581521]====
+gpu_idx =
+
+  2x2 int16 matrix
+
+   1025   2048
+   1025   2048
+
+Pipeline Obj is generated...
+====Local (Non-rigid) Registration====
+[time = 0.00 s]
+Round 2 vs. Round 1...[time = 1428.47 s]
+Round 3 vs. Round 1...[time = 1394.53 s]
+Round 4 vs. Round 1...[time = 1377.88 s]
+Round 5 vs. Round 1...[time = 1387.91 s]
+====Load Codebook====
+doReverse: 1
+====Spot Finding====
+Method: max3d
+Reference round: 1
+Number of spots found by max3d: 5221
+[time = 24.51 s]
+====Reads Extraction====
+voxel size: 2 x 2 x 1
+Geting color sequence for each voxel...
+
+Geting max color...
+150 
+Decoding...
+IdleTimeout has been reached.
+Parallel pool using the 'local' profile is shutting down.
+Starting parallel pool (parpool) using the 'local' profile ...
+Connected to the parallel pool (number of workers: 1).
+
+Number of spots were dropped because of multi-max color: 150
+====Reads Filtration====
+mode: regular
+Base in both ends: C --- C
+1.000000 [5071 / 5071] percent of reads are below score thresh 5.000000e-01
+Filtration Statistics:
+0.918754 [4659 / 5071] percent of good reads are CNNNNNC
+0.918359 [4657 / 5071] percent of good reads are in codebook
+0.999571 [4657 / 4659] percent of CNNNNNC reads are in codebook
+
+block_offsets =
+
+  1x3 int16 row vector
+
+   1024   1024      0
+
+
+block_offsets =
+
+  1x3 int16 row vector
+
+   1024   1024      0
+
+====Block 4 Finished [time=5706.313467]====
+curr_img_out_path =
+
+    '/stanley/WangLab/Data/Processed/2022-10-15-Rena-SkinCulture254-gene/output/2022-10-24/dots_image'
+
+
+ans = 
+
+  struct with fields:
+
+                  LoadRawImages: 'uint8'
+                   SwapChannels: [1 2 3]
+          HistogramEqualization: "rawImages"
+    MorphologicalReconstruction: 1
+        test_GlobalRegistration: 1
+
+Finished
+Current time : 16:20:56

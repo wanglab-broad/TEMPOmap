@@ -1,0 +1,308 @@
+Current time : 02:06:17
+
+                            < M A T L A B (R) >
+                  Copyright 1984-2019 The MathWorks, Inc.
+                  R2019a (9.6.0.1072779) 64-bit (glnxa64)
+                               March 8, 2019
+
+ 
+To get started, type doc.
+For product information, visit www.mathworks.com.
+ 
+
+	Non-Degree Granting Education License -- for use at non-degree granting, nonprofit,
+	educational organizations only.  Not for government, commercial, or other organizational use.
+
+
+tile =
+
+    'Position427'
+
+
+run_id =
+
+    '2022-10-05'
+
+
+curr_data_dir =
+
+    'Position427'
+
+
+curr_out_path =
+
+    '/stanley/WangLab/Data/Processed/2022-09-30-Rena-Cardiomyocyte64Gene/output/2022-10-05/Position427'
+
+Pipeline Obj is generated...
+====Loading raw images====
+Loading round 1...[time = 12.71 s]
+Loading round 2...[time = 13.08 s]
+Loading round 3...[time = 15.74 s]
+Loading round 4...[time = 13.80 s]
+Raw image as 5-D array
+====Swap Channels====
+Channel 2 <==> Channel 3
+====Histogram Equalization====
+Method: inter_round
+Equalizing channel 1
+Equalizing channel 2
+Equalizing channel 3
+Equalizing channel 4
+====Histogram Equalization====
+Method: intra_round
+Equalizing round 1
+Equalizing round 2
+Equalizing round 3
+Equalizing round 4
+====Morphological Reconstruction====
+Method: 2d
+Processing Round 1...[time = 36.97 s]
+Processing Round 2...[time = 35.48 s]
+Processing Round 3...[time = 35.66 s]
+Processing Round 4...[time = 35.56 s]
+====Global Registration====
+DFT register finished [time=29.496762]
+DFT apply finished [time=131.019909]
+Round 2 vs. Round 1 finished [time=160.945716]
+Shifted by 19  14   0
+DFT register finished [time=29.429530]
+DFT apply finished [time=131.252876]
+Round 3 vs. Round 1 finished [time=161.112356]
+Shifted by 12  10  -1
+DFT register finished [time=29.410303]
+DFT apply finished [time=131.321467]
+Round 4 vs. Round 1 finished [time=161.160798]
+Shifted by 11   7  -1
+
+NgpuBlock =
+
+     4
+
+
+gpu_idx =
+
+  2x2 int16 matrix
+
+      1   1024
+      1   1024
+
+Pipeline Obj is generated...
+====Local (Non-rigid) Registration====
+[time = 0.00 s]
+Round 2 vs. Round 1...[time = 525.91 s]
+Round 3 vs. Round 1...[time = 526.79 s]
+Round 4 vs. Round 1...[time = 524.79 s]
+====Load Codebook====
+doReverse: 1
+====Spot Finding====
+Method: max3d
+Reference round: 1
+Number of spots found by max3d: 2731
+[time = 18.21 s]
+====Reads Extraction====
+voxel size: 2 x 2 x 1
+Geting color sequence for each voxel...
+
+Geting max color...
+76 
+Decoding...
+Starting parallel pool (parpool) using the 'local' profile ...
+Connected to the parallel pool (number of workers: 1).
+
+Number of spots were dropped because of multi-max color: 76
+====Reads Filtration====
+mode: regular
+Base in both ends: C --- C
+1.000000 [2655 / 2655] percent of reads are below score thresh 5.000000e-01
+Filtration Statistics:
+0.903578 [2399 / 2655] percent of good reads are CNNNNNC
+0.903578 [2399 / 2655] percent of good reads are in codebook
+1.000000 [2399 / 2399] percent of CNNNNNC reads are in codebook
+
+block_offsets =
+
+  1x3 int16 row vector
+
+   0   0   0
+
+
+block_offsets =
+
+  1x3 int16 row vector
+
+   0   0   0
+
+====Block 1 Finished [time=1692.332279]====
+gpu_idx =
+
+  2x2 int16 matrix
+
+      1   1024
+   1025   2048
+
+Pipeline Obj is generated...
+====Local (Non-rigid) Registration====
+[time = 0.00 s]
+Round 2 vs. Round 1...[time = 528.49 s]
+Round 3 vs. Round 1...[time = 528.02 s]
+Round 4 vs. Round 1...[time = 523.76 s]
+====Load Codebook====
+doReverse: 1
+====Spot Finding====
+Method: max3d
+Reference round: 1
+Number of spots found by max3d: 1874
+[time = 17.67 s]
+====Reads Extraction====
+voxel size: 2 x 2 x 1
+Geting color sequence for each voxel...
+
+Geting max color...
+26 
+Decoding...
+
+Number of spots were dropped because of multi-max color: 26
+====Reads Filtration====
+mode: regular
+Base in both ends: C --- C
+1.000000 [1848 / 1848] percent of reads are below score thresh 5.000000e-01
+Filtration Statistics:
+0.895563 [1655 / 1848] percent of good reads are CNNNNNC
+0.895563 [1655 / 1848] percent of good reads are in codebook
+1.000000 [1655 / 1655] percent of CNNNNNC reads are in codebook
+
+block_offsets =
+
+  1x3 int16 row vector
+
+   1024      0      0
+
+
+block_offsets =
+
+  1x3 int16 row vector
+
+   1024      0      0
+
+====Block 2 Finished [time=1600.416907]====
+gpu_idx =
+
+  2x2 int16 matrix
+
+   1025   2048
+      1   1024
+
+Pipeline Obj is generated...
+====Local (Non-rigid) Registration====
+[time = 0.00 s]
+Round 2 vs. Round 1...[time = 522.40 s]
+Round 3 vs. Round 1...[time = 522.33 s]
+Round 4 vs. Round 1...[time = 517.83 s]
+====Load Codebook====
+doReverse: 1
+====Spot Finding====
+Method: max3d
+Reference round: 1
+Number of spots found by max3d: 2287
+[time = 17.54 s]
+====Reads Extraction====
+voxel size: 2 x 2 x 1
+Geting color sequence for each voxel...
+
+Geting max color...
+54 
+Decoding...
+
+Number of spots were dropped because of multi-max color: 54
+====Reads Filtration====
+mode: regular
+Base in both ends: C --- C
+1.000000 [2233 / 2233] percent of reads are below score thresh 5.000000e-01
+Filtration Statistics:
+0.922078 [2059 / 2233] percent of good reads are CNNNNNC
+0.922078 [2059 / 2233] percent of good reads are in codebook
+1.000000 [2059 / 2059] percent of CNNNNNC reads are in codebook
+
+block_offsets =
+
+  1x3 int16 row vector
+
+      0   1024      0
+
+
+block_offsets =
+
+  1x3 int16 row vector
+
+      0   1024      0
+
+====Block 3 Finished [time=1582.462850]====
+gpu_idx =
+
+  2x2 int16 matrix
+
+   1025   2048
+   1025   2048
+
+Pipeline Obj is generated...
+====Local (Non-rigid) Registration====
+[time = 0.00 s]
+Round 2 vs. Round 1...[time = 517.84 s]
+Round 3 vs. Round 1...[time = 516.29 s]
+Round 4 vs. Round 1...[time = 518.84 s]
+====Load Codebook====
+doReverse: 1
+====Spot Finding====
+Method: max3d
+Reference round: 1
+Number of spots found by max3d: 2208
+[time = 17.60 s]
+====Reads Extraction====
+voxel size: 2 x 2 x 1
+Geting color sequence for each voxel...
+
+Geting max color...
+9 
+Decoding...
+
+Number of spots were dropped because of multi-max color: 9
+====Reads Filtration====
+mode: regular
+Base in both ends: C --- C
+1.000000 [2199 / 2199] percent of reads are below score thresh 5.000000e-01
+Filtration Statistics:
+0.925875 [2036 / 2199] percent of good reads are CNNNNNC
+0.925875 [2036 / 2199] percent of good reads are in codebook
+1.000000 [2036 / 2036] percent of CNNNNNC reads are in codebook
+
+block_offsets =
+
+  1x3 int16 row vector
+
+   1024   1024      0
+
+
+block_offsets =
+
+  1x3 int16 row vector
+
+   1024   1024      0
+
+====Block 4 Finished [time=1572.707059]====
+curr_img_out_path =
+
+    '/stanley/WangLab/Data/Processed/2022-09-30-Rena-Cardiomyocyte64Gene/output/2022-10-05/dots_image'
+
+
+ans = 
+
+  struct with fields:
+
+                  LoadRawImages: 'uint8'
+                   SwapChannels: [1 2 3]
+          HistogramEqualization: "rawImages"
+    MorphologicalReconstruction: 1
+        test_GlobalRegistration: 1
+
+Finished
+Current time : 04:06:29
