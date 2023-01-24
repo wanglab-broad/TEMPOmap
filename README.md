@@ -14,4 +14,4 @@ Scripts for the '**Spatiotemporally resolved single-cell transcriptomics reveals
 
 #### Contributor
 
-Jiahao Huang, Haowen Zhou, Kangni (Connie) Wang, Jingyi (Rena) Ren
+Jiahao Huang, Haowen Zhou, Connie Wang, Jingyi (Rena) Ren
