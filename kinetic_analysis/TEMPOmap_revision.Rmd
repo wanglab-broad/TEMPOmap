@@ -13,18 +13,16 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r load_package&data}
 
-source("~/Desktop/At_Broad/Subcellular/TEMPOmap_function.R")
+source("TEMPOmap_function.R")
 subc_ini()
-setwd("~/Desktop/At_Broad/Subcellular")
+
 #Convert Data
-#Convert("2021-09-24-Rena-EU-starmap-raw-KD-combined.h5ad", dest = "h5seurat", overwrite = TRUE)
-#Convert("2021-09-24-Rena-EU-starmap-cc.h5ad", dest = "h5seurat", overwrite = TRUE)
-#Convert("2022-02-04-Rena-EU-starmap-after-pp-300.h5ad", dest = "h5seurat", overwrite = TRUE)
+
+#Convert("data/2021-09-24-Rena-EU-starmap-raw-KD-combined", dest = "h5seurat", overwrite = TRUE)
 #Load Data
 starmap <- LoadH5Seurat("data/2021-09-24-Rena-EU-starmap-raw-KD-combined.h5seurat")
-#cc_df <- read_csv("2021-10-06-obs.csv")
-#starmap_normalized@meta.data[["Phase"]] <- cc_df$phase_ref
-#starmap <- LoadH5Seurat("data/2022-10-13-Rena-FUCCI-raw.h5seurat")
+
+
 starmap_16 <- LoadH5Seurat("data/2022-10-11-Rena-HeLa16Gene-preflt2.h5seurat", meta.data = FALSE, misc = FALSE)
 starmap_16@meta.data <- read.csv("data/2022-10-11-cell_metadata.csv")
 starmap_16@meta.data[["sample"]] %<>% as.character()
@@ -63,101 +61,14 @@ starmap_s@meta.data[["sample"]][starmap_s@meta.data[["sample"]] == "2"] <- "2h_l
 starmap_s@meta.data[["volume"]] <- starmap_s@meta.data[["area"]]
 starmap_s@meta.data[["n_volume"]] <- starmap_s@meta.data[["nuclues_volume"]]
 starmap_s <- subset(starmap_s, sample != "STARmap")
+#For violin only, keep 20h 
 starmap_s <- subset(starmap_s, sample != "20h_labeling")
-#starmap_c@assays[["RNA"]]@counts <- rbind(starmap_c@assays[["RNA"]]@counts,"AF546" = starmap_c@meta.data$AF546)
-#starmap_c@assays[["nucleus"]]@data <- rbind(starmap_c@assays[["nucleus"]]@data,"AF546" = starmap_c@meta.data$AF546_nucleus)
 
-#starmap <- LoadH5Seurat("2021-09-24-Rena-EU-starmap-cc.h5seurat")
-```
-
-## Calc. Volumes
-
-```{r}
-#read image
-library(terra)
-library(raster)
-
-
-img_list <- paste0("img_1000/",list.files("img_1000"))
-img_summ_list <- list()
-for(i in img_list){
-  tmp_img <- sds(i)
-  tmp_list <- list()
-  message(paste(i,", Layers:", length(names(tmp_img))))
-  for(j in 1:length(names(tmp_img))){
-    suppressMessages(tmp_list[[j]] <- freq(tmp_img[j]))
-  }
-  img_summ_list[[i]] <- tmp_list
-}
-
-img_summ_list <- readRDS("~/Desktop/At_Broad/Subcellular/data/img_summ_ls.RDS")
-starmap@meta.data[["n_volume"]] <- 0
-
-for(i in c("1h_labeling_1h_wash","1h_labeling_2h_wash","1h_labeling_4h_wash","1h_labeling_6h_wash","1h_labeling","20h_labeling")){
-  message(paste("Sample:", i))
-  for(j in img_summ_list[[paste0("img/",i,".tif")]]){
-    starmap@meta.data$n_volume <- apply(starmap@meta.data,1,
-                                        FUN = function(x){
-                                          if(x[["sample"]] == i & 
-                                             (as.numeric(x[["orig_index"]])+1) %in% j[,"value"]){#orig_index + 1
-                                            as.numeric(x[["n_volume"]]) + 
-                                              j[,"count"][j[,"value"] == (as.numeric(x[["orig_index"]])+1)]
-                                            }else as.numeric(x[["n_volume"]])
-                                        })
-  }
-  
-}
-
-img_summ_list <- readRDS("~/Desktop/At_Broad/Subcellular/img_summ_ls_1000.RDS")
-starmap@meta.data[["n_volume"]] <- 0
-
-#sample to area corrsponding 
-tmp_vec <- c("1h_labeling_1h_wash","1h_labeling_2h_wash","1h_labeling_4h_wash",
-           "1h_labeling_6h_wash","1h_labeling","20h_labeling","STARmap")
-
-for(i in 1:7){
-  message(paste("Sample:",tmp_vec[i]))
-  index_max <- 0
-  for(j in img_summ_list[[paste0("img_1000/",tmp_vec[i],".tif")]]){
-    index_max <- max(c(j[,2],index_max))
-    starmap@meta.data$n_volume <- apply(starmap@meta.data,1,
-                                        FUN = function(x){
-                                          if(x[["sample"]] == tmp_vec[i] & 
-                                             (as.numeric(x[["orig_index"]])+1) %in% j[,"value"]){#orig_index + 1
-                                            as.numeric(x[["n_volume"]]) + 
-                                              j[,"count"][j[,"value"] == (as.numeric(x[["orig_index"]])+1)]
-                                            }else as.numeric(x[["n_volume"]])
-                                        })
-  }
-  message(index_max)
-}
-
-
-img_summ_list <- readRDS("~/Desktop/At_Broad/Subcellular/img_summ_ls_16.RDS")
-starmap_16@meta.data[["volume"]] <- starmap_16@meta.data[["area"]]
-starmap_16@meta.data[["n_volume"]] <- 0
-starmap_16@meta.data[["index"]] <- starmap_16@meta.data[["orig_index"]] + 1
-#sample to area corrsponding 
-tmp_vec <- c("20h_labeling","1h_labeling_2h_wash","1h_labeling_4h_wash","1h_labeling_6h_wash","1h_labeling_1h_wash","1h_labeling","starmap")
-
-for(i in 1:7){
-  message(paste("Sample:",tmp_vec[i]))
-  index_max <- 0
-  for(j in img_summ_list[[paste0("img_16/nuclei_Area",i,".tif")]]){
-    index_max <- max(c(j[,2],index_max))
-    starmap_16@meta.data$n_volume <- apply(starmap_16@meta.data,1,
-                                        FUN = function(x){
-                                          if(x[["sample"]] == tmp_vec[i] & 
-                                             (as.numeric(x[["orig_index"]])+1) %in% j[,"value"]){#orig_index + 1
-                                            as.numeric(x[["n_volume"]]) + 
-                                              j[,"count"][j[,"value"] == (as.numeric(x[["orig_index"]])+1)]
-                                            }else as.numeric(x[["n_volume"]])
-                                        })
-  }
-  message(index_max)
-}
+starmap_c_bk <- starmap_c
+starmap_s_bk <- starmap_s
 
 ```
+
 
 ## Data Filteration
 
@@ -174,10 +85,7 @@ ggplot(starmap_16@meta.data,aes(x = total_counts)) +
   geom_density() + 
   theme_classic()
 
-#For cardiac
-starmap <- starmap_c
-starmap@assays$cytoplasm <- starmap@assays$nucleus
-starmap@assays$cytoplasm@data <- starmap@assays$RNA@counts - starmap@assays$nucleus@data
+
 
 #For skin
 
@@ -205,6 +113,10 @@ gene_list <- gene_list[!gene_list %in% c("GAPDH")]
 ### for original data
 ```{r}
 starmap <- readRDS("~/Desktop/At_Broad/Subcellular/Dec02_starmap_original_w_vol.RDS")
+#External CC label
+cc_df <- read.csv("/Users/zhouhaowen/Desktop/At_Broad/Subcellular/export_csv/2021-10-06-obs.csv")
+starmap@meta.data[["Phase"]] <- cc_df$phase_ref
+
 starmap_normalized <- samplewise_norm(starmap, raw_norm = F, 
                                       anchor_gene = row.names(starmap)[c(1:2,4:7)],ref_sample = "1h_labeling") 
 starmap_raw_norm <- samplewise_norm(starmap, raw_norm = T, 
@@ -212,6 +124,8 @@ starmap_raw_norm <- samplewise_norm(starmap, raw_norm = T,
 gene_list <- row.names(starmap_normalized@assays$RNA@counts)
 #Remove genes
 gene_list <- gene_list[!gene_list %in% c("METTL14","METTL3","YTHDC1","YTHDC2","YTHDF1","YTHDF2","YTHDF3")]
+
+
 #Shuffle Label
 starmap_normalized@meta.data$sample[starmap_normalized@meta.data$sample != "20h_labeling"] <- 
   sample(starmap_normalized@meta.data$sample[starmap_normalized@meta.data$sample != "20h_labeling"], 
@@ -219,18 +133,26 @@ starmap_normalized@meta.data$sample[starmap_normalized@meta.data$sample != "20h_
 
 starmap_raw_norm@meta.data$sample <- starmap_normalized@meta.data$sample
 
+#Volume Violin
+ggplot(starmap@meta.data,aes(x = Phase, y = volume, fill = Phase)) + 
+  geom_violin() + 
+  geom_boxplot(width = 0.1, fill = "white") + 
+  ylim(0,quantile(starmap@meta.data$volume, probs = c(0.99))) + 
+  theme_classic()
+
 ```
-### for 1k replicate
-```{r}
-```
+
 ###for cardiac
 ```{r}
-quantile(starmap_c$total_counts,probs = c(0.01,0.05,0.95,0.99))
-starmap_c_bk <- starmap_c
-
+dataset = "cardiac"
+#quantile(starmap_c$total_counts,probs = c(0.01,0.05,0.95,0.99))
 
 #starmap_c <- subset(starmap_c_bk, total_counts > quantile(starmap_c_bk$total_counts,probs = c(0.05)) & total_counts < quantile(starmap_c_bk$total_counts,probs = c(0.95)))
 starmap_c <- subset(starmap_c_bk, volume < 3e6)
+
+starmap_c@assays$cytoplasm <- starmap_c@assays$nucleus
+starmap_c@assays$cytoplasm@data <- starmap_c@assays$RNA@counts - starmap_c@assays$nucleus@data
+
 starmap_c <- NormalizeData(starmap_c, normalization.method = "LogNormalize", scale.factor = 10000)
 starmap_c <- ScaleData(starmap_c, features = rownames(starmap_c))
 starmap_c <- RunPCA(starmap_c, features = rownames(starmap_c))
@@ -241,41 +163,79 @@ starmap_c <- FindNeighbors(starmap_c, dims = 1:5)
 starmap_c <- FindClusters(starmap_c , resolution = 0.1)
 
 starmap_c  <- RunUMAP(starmap_c , dims = 1:6)
-DimPlot(starmap_c , reduction = "umap")
-DimPlot(starmap_c , reduction = "umap", group.by = "sample")
+
 #Export rds
 #saveRDS(starmap_c,file = "Nov10_cardiac_cluster.RDS")
 #write.csv(starmap_c@meta.data,"Nov10_cardiac_cluster_label.csv")
-#starmap_c  <- readRDS("Nov10_cardiac_cluster.RDS")
+#starmap_c  <- LoadH5Seurat("Dec07_cardiac_dataset_nc_umap.h5seurat")
+# For UMAP embedding delete 20h/ for violin keep 20h
+starmap_c<- subset(starmap_c, sample != "20h_labeling")
+
+pdf(file = "Dec08_cardiac_umap.pdf",width = 8,height = 6)
+DimPlot(starmap_c , reduction = "umap") %>% print()
+DimPlot(starmap_c , reduction = "umap", group.by = "sample") %>% print()
+dev.off()
 
 starmap_c.markers <- FindAllMarkers(starmap_c, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
 
 starmap_c.markers  %>%
     group_by(cluster) %>%
     top_n(n = 10, wt = avg_log2FC) -> top10
-DoHeatmap(starmap_c, features = top10$gene) + 
+starmap_c@meta.data[["sample_cl"]] <- paste(starmap_c$sample,starmap_c$seurat_clusters,sep = "_")
+starmap_c@meta.data[["sample_cl"]] <- factor(starmap_c@meta.data[["sample_cl"]], 
+                                             levels = c("20h_labeling_0","2h_labeling_0","2h_labeling_2h_wash_0","2h_labeling_4h_wash_0", "2h_labeling_6h_wash_0",
+                                                        "20h_labeling_1","2h_labeling_1","2h_labeling_2h_wash_1","2h_labeling_4h_wash_1", "2h_labeling_6h_wash_1"))
+
+DoHeatmap(starmap_c %>% subset(sample != "20h_labeling"), features = top10$gene, disp.min = -2, disp.max = 2, group.by = "sample_cl") + #
   #NoLegend() +
-  scale_fill_gradientn(colors = c("#0000FF","#A8A8FF","#FFFFFF","#FFA8A8","#FF0000"))
+  scale_fill_gradientn(colors = c("#0000FF","#A8A8FF","#FFFFFF","#FFA8A8","#FF0000"), limits = c(-2,2))#
+
+
+DotPlot(starmap_c, features = top10$gene) + 
+  scale_fill_gradientn(colors = c("#0000FF","#A8A8FF","#FFFFFF","#FFA8A8","#FF0000"), limits = c(-1,1))
+
 #Volume Visualize
 ggplot(starmap_c@meta.data,aes(x = sample, y = volume, fill = seurat_clusters)) + 
   geom_violin() + 
   #geom_boxplot(color = "black", width = 0.1) + 
   theme_classic()
 
+#Normalize for parameter
+#For cardiac
+starmap <- starmap_c
+starmap@assays$cytoplasm <- starmap@assays$nucleus
+starmap@assays$cytoplasm@data <- starmap@assays$RNA@counts - starmap@assays$nucleus@data
+
+starmap_raw_norm <- samplewise_norm(starmap, raw_norm = T, anchor_vec = starmap$AF546)
+starmap_normalized <- samplewise_norm(starmap, raw_norm = F, anchor_vec = starmap$AF546)
+gene_list <- row.names(starmap_normalized@assays$RNA@counts)
+starmap_normalized@meta.data[["norm_counts"]] <-  colSums(starmap_normalized@assays$RNA@counts[row.names(starmap_normalized) %in% gene_list,])
+starmap_raw_norm@meta.data[["norm_counts"]] <-  colSums(starmap_raw_norm@assays$RNA@counts[row.names(starmap_raw_norm) %in% gene_list,])
+
+
+ggplot(data = starmap_raw_norm@meta.data , aes(x = norm_counts, y = sample, fill = sample)) + 
+  geom_violin(alpha = 0.5) +
+  geom_boxplot(width=0.1, fill = "white") + 
+  coord_flip() +
+  scale_fill_manual(values = color_code) +
+  xlim(0, quantile(starmap_raw_norm@meta.data$norm_counts, probs = 0.99)) + 
+  theme_classic() + labs(title = "Batch Corrected reads per cell") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust= 1))
+
 ```
 
 ###for skin
 
 ```{r}
+dataset <- "skin"
 norm_thres <- 40
 starmap_s <- starmap_s_bk
 starmap_s@meta.data[["cell_id"]] <- paste0(starmap_s$sample,"_", starmap_s$orig_index)
 
-starmap <- starmap_s
-starmap@assays$cytoplasm <- starmap@assays$nucleus
-starmap@assays$cytoplasm@data <- starmap@assays$RNA@counts - starmap@assays$nucleus@data
+starmap_s@assays$cytoplasm <- starmap_s@assays$nucleus
+starmap_s@assays$cytoplasm@data <- starmap_s@assays$RNA@counts - starmap_s@assays$nucleus@data
 
-starmap_raw_norm <- samplewise_norm(starmap, raw_norm = T, anchor_vec = starmap_s$AF546)
+starmap_raw_norm <- samplewise_norm(starmap_s, raw_norm = T, anchor_vec = starmap_s$AF546)
 starmap_raw_norm@meta.data[["norm_counts"]] <-  colSums(starmap_raw_norm@assays$RNA@counts)
 starmap_raw_norm <- subset(starmap_raw_norm, norm_counts > norm_thres)
 starmap_s <- subset(starmap_s, cell_id %in% starmap_raw_norm$cell_id)
@@ -309,29 +269,48 @@ ggarrange(plotlist = plot_list,ncol = 3,nrow = 1)
 #Export rds
 #saveRDS(starmap_s,file = "Nov16_skin_cluster.RDS")
 #write.csv(starmap_s@meta.data,"Nov16_skin_cluster_label.csv")
-starmap_s  <- readRDS("Nov16_skin_cluster_fixed.RDS")
+#starmap_s  <- LoadH5Seurat("Dec07_skin_dataset_nc_umap.h5seurat")
+
+pdf(file = "Dec08_skin_umap.pdf",width = 8,height = 6)
+DimPlot(starmap_s , reduction = "umap") %>% print()
+DimPlot(starmap_s , reduction = "umap", group.by = "sample") %>% print()
+dev.off()
 
 starmap_s.markers <- FindAllMarkers(starmap_s, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
-
+starmap_s@meta.data[["sample_cl"]] <- paste(starmap_s$sample,starmap_s$seurat_clusters,sep = "_")
+starmap_s@meta.data[["sample_cl"]] <- factor(starmap_s@meta.data[["sample_cl"]], 
+                                             levels = c("2h_labeling_0","2h_labeling_2h_wash_0","2h_labeling_4h_wash_0", "2h_labeling_6h_wash_0",
+                                                        "2h_labeling_1","2h_labeling_2h_wash_1","2h_labeling_4h_wash_1", "2h_labeling_6h_wash_1",
+                                                        "2h_labeling_2","2h_labeling_2h_wash_2","2h_labeling_4h_wash_2", "2h_labeling_6h_wash_2"))
 starmap_s.markers  %>%
     group_by(cluster) %>%
     top_n(n = 10, wt = avg_log2FC) -> top10
-DoHeatmap(starmap_s, features = top10$gene) + 
-  #NoLegend() +
-  scale_fill_gradientn(colors = c("#0000FF","#A8A8FF","#FFFFFF","#FFA8A8","#FF0000"))
+DoHeatmap(starmap_s, features = top10$gene, disp.min = -2, disp.max = 2, group.by = "sample_cl") + #
+    #NoLegend() +
+    scale_fill_gradientn(colors = c("#0000FF","#A8A8FF","#FFFFFF","#FFA8A8","#FF0000"), limits = c(-2,2))#
 #Volume Visualize
 ggplot(starmap_s@meta.data,aes(x = sample, y = volume, fill = seurat_clusters)) + 
   geom_violin() + 
   #geom_boxplot(color = "black", width = 0.1) + 
   theme_classic()
 
+starmap_raw_norm <- samplewise_norm(starmap_s, raw_norm = T, anchor_vec = starmap_s$AF546)
+starmap_normalized <- samplewise_norm(starmap_s, raw_norm = F, anchor_vec = starmap_s$AF546)
+gene_list <- row.names(starmap_normalized@assays$RNA@counts)
+starmap_normalized@meta.data[["norm_counts"]] <-  colSums(starmap_normalized@assays$RNA@counts[row.names(starmap_normalized) %in% gene_list,])
+starmap_raw_norm@meta.data[["norm_counts"]] <-  colSums(starmap_raw_norm@assays$RNA@counts[row.names(starmap_raw_norm) %in% gene_list,])
 
-```
+color_code <- c("#9E0142", "#F88D52", "#FFFFBF", "#89D0A4", "#5E4FA2", "#414FF2")
 
-### Seurat Obj to h5ad
-```{r}
-SeuratDisk::as.h5Seurat(starmap,"Nov18_skin_dataset")
-Convert("Nov18_skin_dataset.h5seurat",dest = "h5ad")
+ggplot(data = starmap_raw_norm@meta.data , aes(x = norm_counts, y = sample, fill = sample)) + 
+  geom_violin(alpha = 0.5) +
+  geom_boxplot(width=0.1, fill = "white") + 
+  coord_flip() +
+  scale_fill_manual(values = color_code) +
+  theme_classic() + labs(title = "Batch Corrected reads per cell") + 
+  xlim(0, quantile(starmap_raw_norm@meta.data$norm_counts, probs = 0.99)) + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust= 1))
+
 ```
 
 
@@ -399,6 +378,23 @@ plot_ly(x = phate_res$PHATE1,
         size = 1)
 
 ```
+
+
+### Seurat Obj to h5ad
+```{r}
+starmap <- starmap_s
+starmap@reductions$umap@cell.embeddings <- starmap_nc@reductions$umap@cell.embeddings
+DimPlot(starmap,group.by = "sample")
+SeuratDisk::as.h5Seurat(starmap,"Dec07_skin_dataset_nc_umap")
+Convert("Dec07_skin_dataset_nc_umap.h5seurat",dest = "h5ad")
+
+starmap <- starmap_c
+starmap@reductions$umap@cell.embeddings <- starmap_nc@reductions$umap@cell.embeddings
+DimPlot(starmap,group.by = "sample")
+SeuratDisk::as.h5Seurat(starmap,"Dec07_cardiac_dataset_nc_umap")
+Convert("Dec07_cardiac_dataset_nc_umap.h5seurat",dest = "h5ad")
+```
+
 
 ### norm reads distr
 
@@ -528,9 +524,9 @@ starmap_normalized@meta.data$KD_label_new <-
            #0.1250000 0.3191489
            #1000gene
            #0.2962963 1.0869565 
-           if(!is.na(x) & as.numeric(x) >= 0.0754717)
+           if(!is.na(x) & as.numeric(x) >= 0.3191489)
              "siControl"
-           else if(!is.na(x) & as.numeric(x) <= 0.4318182)
+           else if(!is.na(x) & as.numeric(x) <= 0.125)
              "siYTHDC1"
            else "middle"
              })
@@ -545,37 +541,38 @@ ggplot(data = data.frame(label = starmap_normalized@meta.data$KD_label_new,
 
 
 #Sep by size
-starmap_normalized@meta.data$KD_label_new <- 
-  sapply(starmap_normalized@meta.data$volume,
+starmap_normalized@meta.data$size_group <- 
+  apply(starmap_normalized@meta.data,1,
          FUN = function(x){
            #starmap_normalized@assays[["RNA"]]@counts[3,] %>% sort(decreasing = T) %>% .[2000] = 7.644685
-           if(as.numeric(x) >= 193264.0)
-             "large"
+           if(as.numeric(x[["volume"]]) >= 193264.0)
+             paste0("large")
            #starmap_normalized@assays[["RNA"]]@counts[3,] %>% sort(decreasing = F) %>% .[2000] = 1.374619 
-           else if(as.numeric(x) < 193264.0 )
-             "small"
-           else "middle"
+           else if(as.numeric(x[["volume"]]) < 193264.0 )
+             paste0("small")
+           else paste0("middle")
              })
 
 res_list <- list()
 
 for(i in c("G1","S","G2M")){
-  for(k in c("siControl")){
+  for(k in levels(as.factor(starmap_normalized@meta.data$size_group))){
     psd_bulk_list <- list(RNA = data.frame(gene = row.names(starmap_normalized)),
-                    Cytoplasm = data.frame(gene = row.names(starmap_normalized)),
-                    Nucleus = data.frame(gene = row.names(starmap_normalized)),
-                    RNA_r = data.frame(gene = row.names(starmap_normalized)),
-                    Cytoplasm_r = data.frame(gene = row.names(starmap_normalized)),
-                    Nucleus_r = data.frame(gene = row.names(starmap_normalized)))
+                      Cytoplasm = data.frame(gene = row.names(starmap_normalized)),
+                      Nucleus = data.frame(gene = row.names(starmap_normalized)),
+                      RNA_r = data.frame(gene = row.names(starmap_normalized)),
+                      Cytoplasm_r = data.frame(gene = row.names(starmap_normalized)),
+                      Nucleus_r = data.frame(gene = row.names(starmap_normalized)))
     v_n <- c()
     v_c <- c()
-    for(j in levels(starmap_normalized@meta.data$sample)){
+    for(j in c("1h_labeling","1h_labeling_2h_wash","1h_labeling_4h_wash","1h_labeling_6h_wash")){
       tmp_vec <- starmap_normalized@meta.data$sample == j & 
-        starmap_normalized@meta.data$Phase == i #& 
-        #starmap_normalized@meta.data$KD_label_combined == k
+        starmap_normalized@meta.data$size_group == k & 
+        starmap_normalized@meta.data$KD_label_new == "siControl" #& 
+        #starmap_normalized@meta.data$Phase == i
       v_n <- setNames(c(v_n,mean(starmap_normalized@meta.data$n_volume[tmp_vec])),c(names(v_n),j))
       v_c <- setNames(c(v_c,mean(starmap_normalized@meta.data$volume[tmp_vec])-mean(starmap_normalized@meta.data$n_volume[tmp_vec])),
-                    c(names(v_c),j))
+                      c(names(v_c),j))
       psd_bulk_list$RNA[[j]] <- rowSums(starmap_normalized@assays$RNA@counts[,tmp_vec])/sum(tmp_vec)
       psd_bulk_list$Cytoplasm[[j]] <- rowSums(starmap_normalized@assays$cytoplasm@data[,tmp_vec])/sum(tmp_vec)
       psd_bulk_list$Nucleus[[j]] <- rowSums(starmap_normalized@assays$nucleus@data[,tmp_vec])/sum(tmp_vec)
@@ -583,11 +580,38 @@ for(i in c("G1","S","G2M")){
       psd_bulk_list$Cytoplasm_r[[j]] <- rowSums(starmap_raw_norm@assays$cytoplasm@data[,tmp_vec])/sum(tmp_vec)
       psd_bulk_list$Nucleus_r[[j]] <- rowSums(starmap_raw_norm@assays$nucleus@data[,tmp_vec])/sum(tmp_vec)
     }
-    res_df <- sc_fitting(gene_list,psd_bulk_list,v_n/100000,v_c/100000)
-    #res_df <- sc_fitting(gene_list,psd_bulk_list)
-    res_list[[paste(k,i,sep = "_")]] <- res_df
+    #res_df <- sc_fitting(gene_list,psd_bulk_list,v_n/100000,v_c/100000)
+    res_df <- sc_fitting(gene_list,psd_bulk_list,v_n/100000,v_c/100000,label_vec = c(1,1,1,1), wash_vec = c(0,2,4,6))
+    for(j in levels(starmap_raw_norm@meta.data$sample)){
+      tmp_vec <- starmap_normalized@meta.data$sample == j & 
+        starmap_normalized@meta.data$size_group == k & 
+        starmap_normalized@meta.data$KD_label_new == "siControl" #& 
+        #starmap_normalized@meta.data$Phase == i
+      res_df[[paste0(j,"_nc")]] <- apply(res_df,1,
+                                         FUN = function(x){
+                                           (starmap_raw_norm@assays$nucleus@data[x[["gene"]],tmp_vec] /
+                                              starmap_raw_norm@assays$cytoplasm@data[x[["gene"]],tmp_vec]) %>% 
+                                             .[is.finite(.)] %>% mean()
+                                         })
+    }
+    tmp_list <- apply(res_df,1,
+                      FUN = function(x){
+                        time_vec <- c(0,2,4,6)
+                        nc_vec <- c(x[["1h_labeling_nc"]],x[["1h_labeling_2h_wash_nc"]],
+                                    x[["1h_labeling_4h_wash_nc"]],x[["1h_labeling_6h_wash_nc"]]) %>% as.numeric()
+                        lm_res <- lm(nc~time,data.frame(time = time_vec, nc = nc_vec))
+                        list(gene = x[["gene"]],
+                             nc = lm_res[["coefficients"]][["time"]],
+                             nc_r_sq = summary(lm_res)[["r.squared"]], 
+                             nc_adj_r_sq = summary(lm_res)[["adj.r.squared"]])
+                                  })
+    tmp_df <- do.call(rbind.data.frame, tmp_list)
+    res_df[["nc_slope"]] <- tmp_df[["nc"]]
+    res_df[["nc_r_sq"]] <- tmp_df[["nc_r_sq"]]
+    res_list[[paste0(i,"_",k)]] <- res_df
   }
 }
+
 
 #Cardiac/skin Data/Separate by cell cluster
 for(k in c(levels(starmap_normalized@meta.data[["seurat_clusters"]]),"all")){
@@ -646,7 +670,7 @@ for(k in c(levels(starmap_normalized@meta.data[["seurat_clusters"]]),"all")){
   tmp_df <- do.call(rbind.data.frame, tmp_list)
   res_df[["nc_slope"]] <- tmp_df[["nc"]]
   res_df[["nc_r_sq"]] <- tmp_df[["nc_r_sq"]]
-  res_list[[paste0("cluster",k)]] <- res_df
+  res_list[[paste0(dataset,"_cluster",k)]] <- res_df
 }
 
 
@@ -662,6 +686,8 @@ for(k in levels(as.factor(starmap_normalized@meta.data$KD_label_new))){
   for(j in c("1h_labeling","1h_labeling_2h_wash","1h_labeling_4h_wash","1h_labeling_6h_wash")){
     tmp_vec <- starmap_normalized@meta.data$sample == j & 
       starmap_normalized@meta.data$KD_label_new == k
+      #starmap_normalized@meta.data$KD_label_new == "siControl" & 
+      #starmap_normalized@meta.data$size_group == k
     v_n <- setNames(c(v_n,mean(starmap_normalized@meta.data$n_volume[tmp_vec])),c(names(v_n),j))
     v_c <- setNames(c(v_c,mean(starmap_normalized@meta.data$volume[tmp_vec])-mean(starmap_normalized@meta.data$n_volume[tmp_vec])),
                     c(names(v_c),j))
@@ -677,6 +703,8 @@ for(k in levels(as.factor(starmap_normalized@meta.data$KD_label_new))){
   for(j in levels(starmap_raw_norm@meta.data$sample)){
     tmp_vec <- starmap_normalized@meta.data$sample == j & 
       starmap_normalized@meta.data$KD_label_new == k
+      #starmap_normalized@meta.data$KD_label_new == "siControl" & 
+      #starmap_normalized@meta.data$size_group == k
     res_df[[paste0(j,"_nc")]] <- apply(res_df,1,
                                        FUN = function(x){
                                          (starmap_raw_norm@assays$nucleus@data[x[["gene"]],tmp_vec] /
@@ -747,6 +775,67 @@ sample_plot <- function(gene, par_df, psd_bulk_list){
 }
 
 sample_plot("AARS",res_list$siControl,psd_bulk_list)
+
+# beta fitting curve
+require(reshape2)
+tmp_df <- res_list$siControl[res_list$siControl$gene %in% stable_gene_list$gene,] 
+tmp_df <- data.frame(tmp_df$gene,tmp_df$beta_expr_vec %>% do.call(what = rbind.data.frame),
+                     beta = tmp_df$beta,r_sq = tmp_df$beta_r_sq) %>% arrange(beta) %>% .[1:10,1:5]
+
+colnames(tmp_df) <- c("gene", "1h_labeling", "1h_labeling_2h_washing", "1h_labeling_4h_washing", "1h_labeling_6h_washing")
+
+
+tmp_df <- tmp_df %>% melt(id.vars = "gene")
+ggplot(tmp_df,aes(x = variable, y = value, color = gene, group = gene)) + 
+  geom_path() + 
+  theme_classic()
+
+# compare with prev data
+tmp_df <- res_list$siControl
+tmp_df <- data.frame(tmp_df$gene,tmp_df$beta_expr_vec %>% do.call(what = rbind.data.frame),
+                     beta = tmp_df$beta,r_sq = tmp_df$beta_r_sq) %>% arrange(beta) %>% .[1:20,1:5]
+
+colnames(tmp_df) <- c("gene", "1h_labeling", "1h_labeling_2h_washing", "1h_labeling_4h_washing", "1h_labeling_6h_washing")
+
+rep_data <- read.csv("~/Desktop/At_Broad/Subcellular/data/GSE49339_E-Y2mRNA_Lifetime-rep2.csv")
+tmp_df2 <- rep_data[rep_data$gene %in% tmp_df$gene,]
+# Normalize to 0hr
+tmp_df[,2:5] <- tmp_df[,2:5] %>% exp()
+tmp_df[,2:5] <- tmp_df[,2:5]/matrix(data = rep(tmp_df[,2],4),byrow = F)
+tmp_df2$siControl.3_1 <- tmp_df2$siControl.3_1/tmp_df2$siControl.0_1
+tmp_df2$siControl.0_1 <- tmp_df2$siControl.0_1/tmp_df2$siControl.0_1
+tmp_df2$siControl.6_2 <- tmp_df2$siControl.6_2/tmp_df2$siControl.0_2
+# Melt and combine
+tmp_df <- rbind(tmp_df %>% melt(id.vars = "gene") %>% data.frame(group = "TEMPOmap"), 
+                tmp_df2[,1:4] %>% melt(id.vars = "gene") %>% data.frame(group = "ctrl"))
+tmp_df$time <- apply(tmp_df, 1,
+                     FUN = function(x){
+                       switch(x[["variable"]],
+                              "1h_labeling" = 0,
+                              "1h_labeling_2h_washing" = 2,
+                              "1h_labeling_4h_washing" = 4,
+                              "1h_labeling_6h_washing" = 6,     
+                              "siControl.3_1" = 3,
+                              "siControl.0_1" = 0,
+                              "siControl.6_2" = 6
+                              )
+                     })
+
+
+
+tmp_df2 <- tmp_df %>%
+  group_by(gene,group) %>% arrange(time) %>%
+  mutate(xend = lead(time), yend = lead(value))
+
+plot_list <- list()
+
+for(i in levels(as.factor(tmp_df2$gene))){
+  plot_list[[i]] <- ggplot(tmp_df2[!is.na(tmp_df2$xend) & tmp_df2$gene == i,],aes(x = time, y = value, group = gene)) + 
+  geom_segment(aes(color = gene, linetype = group, xend = xend, yend = yend)) +
+  theme_classic() + ylim(0,max(2,tmp_df2$value[tmp_df2$gene == i]))
+}
+
+ggarrange(plotlist = plot_list, nrow = 4, ncol = 5)
 
 
 ```
@@ -1167,10 +1256,10 @@ ggplot(data = res_df, aes(x = m6A, y = lambda, fill = m6A)) +
 ```{r}
 ##Function Defination
 #Get Standard data
-get_para_df <- function(cond_vec,tmp_list = res_list){
+get_para_df <- function(cond_vec,tmp_list = res_list, r_sq_thres = 0){
   gene_list_overlap <- res_list[[cond_vec[1]]]$gene
   for(i in cond_vec){
-    gene_list_overlap <- intersect(gene_list_overlap, res_list[[i]]$gene)
+    gene_list_overlap <- intersect(gene_list_overlap, res_list[[i]] %>% subset(beta_r_sq > r_sq_thres)%>% .$gene)
   }
   tmp_df <- data.frame(gene = gene_list_overlap)
   for(i in cond_vec){
@@ -1179,8 +1268,9 @@ get_para_df <- function(cond_vec,tmp_list = res_list){
     tmp_df[[paste0(i,"_lambda")]] <- apply(tmp_df,1,FUN = function(x){tmp_list[[i]]$lambda[tmp_list[[i]]$gene == x[["gene"]] ]})
     tmp_df[[paste0(i,"_beta_n")]] <- apply(tmp_df,1,FUN = function(x){tmp_list[[i]]$beta_n[tmp_list[[i]]$gene == x[["gene"]] ]})
     tmp_df[[paste0(i,"_beta_c")]] <- apply(tmp_df,1,FUN = function(x){tmp_list[[i]]$beta_c[tmp_list[[i]]$gene == x[["gene"]] ]})
-    tmp_df[[paste0(i,"_beta_rsq")]] <- apply(tmp_df,1,FUN = function(x){tmp_list[[i]]$beta_r_sq[tmp_list[[i]]$gene == x[["gene"]] ]})
-    tmp_df[[paste0(i,"_ked_rsq")]] <- apply(tmp_df,1,FUN = function(x){tmp_list[[i]]$ked_r_sq[tmp_list[[i]]$gene == x[["gene"]] ]})
+    tmp_df[[paste0(i,"_beta_r_sq")]] <- apply(tmp_df,1,FUN = function(x){tmp_list[[i]]$beta_r_sq[tmp_list[[i]]$gene == x[["gene"]] ]})
+    tmp_df[[paste0(i,"_ked_r_sq")]] <- apply(tmp_df,1,FUN = function(x){tmp_list[[i]]$ked_r_sq[tmp_list[[i]]$gene == x[["gene"]] ]})
+    tmp_df[[paste0(i,"_nc_slope")]] <- apply(tmp_df,1,FUN = function(x){tmp_list[[i]]$nc_slope[tmp_list[[i]]$gene == x[["gene"]] ]})
   }
 
   return(tmp_df)
@@ -1321,26 +1411,30 @@ ggplot(data = tmp, aes(x = G2M_beta, y = log2(half_life_rep2))) +
 
 ```{r}
 #Load cardiac data
-cl_vec <- c("cluster0","cluster1")
+dataset <- "cardiac"
+cl_vec <- c("cardiac_cluster0","cardiac_cluster1")
 para_df <- get_para_df(cl_vec,res_list)
 
-tmp_df <- read.csv("cardiac_dr_regression.csv")# no cell type
+#tmp_df <- read.csv("cardiac_dr_regression.csv")# no cell type
 
 tmp_df <- read.csv("cardiac_dr_regression_byCellType_flt.csv")# cell type
-colnames(tmp_df) <- c("X1","gene", "cluster0_slope", "r.2_cardiac", "cluster1_slope", "r.2_fibroblast")
+colnames(tmp_df) <- c("X1","gene", "cardiac_cluster0_regression", "r.2_cardiac", "cardiac_cluster1_regression", "r.2_fibroblast")
 
-para_df <- left_join(para_df,tmp_df[,c(2,3,5)],by = "gene") %>% subset(cluster0_beta_rsq > 0.5 & cluster1_beta_rsq > 0.5 & !is.na(cluster0_slope)  & !is.na(cluster1_slope))
+para_df <- left_join(para_df,tmp_df[,c(2,3,5)],by = "gene") %>% subset(cardiac_cluster0_beta_r_sq > 0.5 & cardiac_cluster1_beta_r_sq > 0.5 & 
+                                                                         !is.na(cardiac_cluster0_regression)  & !is.na(cardiac_cluster1_regression))
 #Load skin data
-cl_vec <- c("cluster0","cluster1","cluster2")
+dataset <- "skin"
+cl_vec <- c("skin_cluster0","skin_cluster1","skin_cluster2")
 para_df <- get_para_df(cl_vec,res_list)
 
-tmp_df <- read.csv("Foreskin_dr_regression_byCellType_flt.csv")# cell type
-colnames(tmp_df) <- c("X1","gene", "cluster0_slope", "cluster0_r.2", "cluster1_slope", "cluster1_r.2", "cluster2_slope", "cluster2_r.2")
+tmp_df <- read.csv("Foreskin_dr_regression_byCellType_flt_1207.csv")# cell type
+colnames(tmp_df) <- c("X1","gene", "skin_cluster0_regression", "skin_cluster0_r.2", 
+                      "skin_cluster1_regression", "skin_cluster1_r.2", "skin_cluster2_regression", "skin_cluster2_r.2")
 
 para_df <- left_join(para_df,tmp_df[,c(2,3,5,7)],by = "gene") %>% 
-  subset(cluster0_beta_rsq > 0.5 & cluster1_beta_rsq > 0.5 & cluster2_beta_rsq > 0.5 & 
-           !is.na(cluster0_slope)  & !is.na(cluster1_slope)  & !is.na(cluster2_slope))
-
+  subset(skin_cluster0_beta_r_sq > 0.5 & skin_cluster1_beta_r_sq > 0.5 & skin_cluster2_beta_r_sq > 0.5 & 
+           !is.na(skin_cluster0_regression)  & !is.na(skin_cluster1_regression)  & !is.na(skin_cluster2_regression))
+##End
 tmp_df <- data.frame(gene = para_df$gene)
 for(cluster in c(levels(starmap_raw_norm@meta.data$seurat_clusters),"all")){
   for(i in levels(as.factor(starmap_raw_norm@meta.data$sample))){
@@ -1370,7 +1464,7 @@ for(cluster in c(levels(starmap_raw_norm@meta.data$seurat_clusters),"all")){
                                   nc_r_sq = summary(lm_res)[["r.squared"]], 
                                             nc_adj_r_sq = summary(lm_res)[["adj.r.squared"]]))
                               })
-  para_df[[paste0("cluster",cluster,"_nc_slope")]] <- do.call(rbind.data.frame,tmp_list)$nc_ratio
+  para_df[[paste0(dataset,"_cluster",cluster,"_nc_slope")]] <- do.call(rbind.data.frame,tmp_list)$nc_ratio
 }
 
 
@@ -1402,18 +1496,19 @@ row.names(tmp_df) <- tmp_df$gene
 Heatmap(matrix = tmp_df[,2:5], cluster_columns = F,cluster_rows  = F, show_row_names = T, col = col_fun,
         column_order = colnames(tmp_df)[2:5],row_split = as.factor(tmp_df$cluster_all), border = TRUE)
 
-#kmeans try WITH cell clustering
-tmp_df <- para_df[,c("gene",paste(cl_vec,rep(c("alpha","beta","nc_slope","slope"), each = length(cl_vec)), sep="_"))]
-tmp_df[,c(2:(length(cl_vec)+1))] %<>% unlist() %>%  scale() %>% matrix(ncol = 2)#a
-tmp_df[,c((length(cl_vec)+2):(length(cl_vec)*2+1))] %<>% unlist() %>%  scale() %>% matrix(ncol = 2)#a
-tmp_df[,c((length(cl_vec)*2+2):(length(cl_vec)*3+1))] %<>% unlist() %>%  scale() %>% matrix(ncol = 2)#a
-tmp_df[,c((length(cl_vec)*3+2):(length(cl_vec)*4+1))] %<>% unlist() %>%  scale() %>% matrix(ncol = 2)#a
+#####kmeans try WITH cell clustering#####
+tmp_df <- para_df[,c("gene",paste(cl_vec,rep(c("alpha","beta","nc_slope","regression"), each = length(cl_vec)), sep="_"))]
+tmp_df[,c(2:(length(cl_vec)+1))] %<>% unlist() %>%  scale() %>% matrix(ncol = length(cl_vec))#a
+tmp_df[,c((length(cl_vec)+2):(length(cl_vec)*2+1))] %<>% unlist() %>%  scale() %>% matrix(ncol = length(cl_vec))#a
+tmp_df[,c((length(cl_vec)*2+2):(length(cl_vec)*3+1))] %<>% unlist() %>%  scale() %>% matrix(ncol = length(cl_vec))#a
+tmp_df[,c((length(cl_vec)*3+2):(length(cl_vec)*4+1))] %<>% unlist() %>%  scale() %>% matrix(ncol = length(cl_vec))#a
 
 
 fviz_nbclust(tmp_df[,c(2:(length(cl_vec)*4+1))],kmeans,k.max = 15,method = "wss")
-set.seed(2021)
+
 # 3 cardiac 4 skin 
-tmp_df.km_res <- kmeans(tmp_df[,c(2:(length(cl_vec)*4+1))],3,nstart = 25)
+set.seed(2021)
+tmp_df.km_res <- kmeans(tmp_df[,c(2:(length(cl_vec)*4+1))],ifelse(dataset == "skin",4,3),nstart = 25)
 
 #PC
 fviz_cluster(tmp_df.km_res,as.matrix(tmp_df[,c(2:(length(cl_vec)*4+1))]),axes = c(1,2), 
@@ -1430,8 +1525,8 @@ row.names(tmp_df) <- tmp_df$gene
 
 Heatmap(matrix = tmp_df[,2:(length(cl_vec)*4+1)], cluster_columns = F,cluster_rows  = F, show_row_names = T, col = col_fun,
         column_order = colnames(tmp_df)[2:(length(cl_vec)*4+1)],row_split = as.factor(tmp_df$cluster_combine), border = TRUE, 
-        column_split = rep(c("alpha","beta","nc_slope","slope"),each = length(cl_vec)))
-write.csv(para_df,"Nov29_cardiac_para_cl.csv")
+        column_split = rep(c("alpha","beta","nc_slope","regression"),each = length(cl_vec)))
+write.csv(para_df,paste0("Dec10_",dataset,"_para_cl.csv"))
 
 #Seurat for skin dataset
 tmp_obj <- CreateSeuratObject(counts = as.data.frame(tmp_df[,2:(length(cl_vec)*4+1)], row.names = as.character(tmp_df$gene)) %>% as.matrix() %>% t(),
@@ -1455,19 +1550,27 @@ Heatmap(matrix = tmp_df[,2:(length(cl_vec)*4+1)], cluster_columns = F,cluster_ro
         column_order = colnames(tmp_df)[2:(length(cl_vec)*4+1)],row_split = as.factor(tmp_df$cluster_seurat), border = TRUE, 
         column_split = rep(c("alpha","beta","slope","nc_slope"),each = length(cl_vec)))
 
-#Seurat UMAP
-tmp_df <- data.frame(starmap_c@reductions[["umap"]]@cell.embeddings)
+#Avg gene cl expr on Seurat UMAP
+require(viridis)
+#cardiac
+tmp_df <- data.frame(starmap_nc@reductions[["umap"]]@cell.embeddings)
 for(i in levels(as.factor(para_df$cluster_combine))){
-  tmp_df[[paste0("log2_cl_",i)]] <- log2(1+colSums(starmap_c@assays$RNA@counts[para_df$gene[para_df$cluster_combine == i],])/
-    sum(para_df$cluster_combine == i))
+  tmp_df[[paste0("log2_cl_",i)]] <- pmin(4,log2(1+colSums(starmap_c@assays$RNA@counts[para_df$gene[para_df$cluster_combine == i],])/
+    sum(para_df$cluster_combine == i)))
 }
-
-para_df <- subset(para_df,cluster_combine != 1)
-tmp_df <- data.frame(starmap_s@reductions[["umap"]]@cell.embeddings)
+starmap_raw_norm@reductions[["umap"]] <- starmap_nc@reductions[["umap"]]
+gene_vec <- c("TNNI3","MYH6","TNNT2","MYH7","TNNI1","MYL2","MYL7","MYL4","MYL3","COL1A2","COL3A1")
+tmp_df <- tmp_df[starmap_nc$sample != "20h_labeling",]
+#Skin
+para_df <- subset(para_df,gene != "MALAT1")
+tmp_df <- data.frame(starmap_nc@reductions[["umap"]]@cell.embeddings)
 for(i in levels(as.factor(para_df$cluster_combine))){
-  tmp_df[[paste0("log2_cl_",i)]] <- log2(1+colSums(starmap_s@assays$RNA@counts[para_df$gene[para_df$cluster_combine == i],])/
-    sum(para_df$cluster_combine == i))
+  tmp_df[[paste0("log2_cl_",i)]] <- pmin(2.5,log2(1+colSums(starmap_raw_norm@assays$RNA@counts[para_df$gene[para_df$cluster_combine == i],])/
+    sum(para_df$cluster_combine == i)))
 }
+starmap_raw_norm@reductions[["umap"]] <- starmap_nc@reductions[["umap"]]
+gene_vec <- c("MITF","MLANA","PMEL","TYR","TYRP1","COL1A1","COL1A2","COL6A1","COL6A2",
+"COL6A3","KRT14","KRT5","LAMB3","LAMC2")
 
 plot_ls <- list()
 
@@ -1475,9 +1578,17 @@ for(i in levels(as.factor(para_df$cluster_combine))){
   plot_ls[[i]] <- ggplot(data = tmp_df,aes_string(x = "UMAP_1",y = "UMAP_2", color = paste0("log2_cl_",i)))+
     geom_point(alpha = 0.2) + 
     theme_classic()+
-    scale_color_gradientn(colors = inferno(5), values = c(0,.25,.5,.75,1))
+    scale_color_gradientn(colors = rev(inferno(5)), values = c(0,.25,.5,.75,1), limits = c(0,4))#cardiac 0-4 skin 0-3
 }
 
+for(i in gene_vec){
+  plot_ls[[i]] <- FeaturePlot(starmap_raw_norm %>% subset(sample != "20h_labeling"), features = i) +
+    scale_color_gradientn(colors = rev(inferno(5)), values = c(0,.25,.5,.75,1))
+}
+
+pdf(file = paste0("Dec10_",dataset,"gene_cl_marker_expr.pdf"),width = 8,height = 6)
+plot_ls %>% print()
+dev.off()
 ggarrange(plotlist = plot_ls, nrow = 1, ncol = length(levels(as.factor(para_df$cluster_combine))))
 
 
@@ -1585,7 +1696,28 @@ avg_heatmap(tmp_df[,2:19], cluster = tmp_df$cluster,
                               levels = c("alpha","beta","lambda","beta_n","beta_c","gamma")))
 
 ```
+
 ## Violin 
+### CC+Large/Small
+```{r }
+para_df <- get_para_df(cond_vec = paste(sep = "_",rep(c("G1","S","G2M"),each = 2),rep(c("large","small"), times = 3 )),tmp_list = res_list,r_sq_thres = 0.5)
+plot_list <- list()
+for(i in c("beta","alpha","nc_slope","beta_r_sq")){
+  tmp_df <- para_df %>% melt(id.vars = c("gene"), measure.vars = paste(sep = "_",rep(c("G1","S","G2M"),each = 2),rep(c("large","small"), times = 3 ), i))
+  plot_list[[i]] <- ggplot(tmp_df, aes_string(x = "variable",fill = "variable", y = "value")) + 
+    geom_violin() +
+    geom_boxplot(width = 0.1, fill = "white") + 
+    ylim(quantile(tmp_df$value,probs = c(0.01,0.99))) + 
+    theme_classic() + 
+    theme(axis.text.x = element_text(angle = 90,vjust = 1, hjust = 1))
+}
+
+ggarrange(plotlist = plot_list,ncol = 2,nrow = 2)
+
+write.csv(para_df,file = "Dec11_para_volume_cc_siControl.csv")
+
+```
+
 ```{r Violin}
 six_violin <- function(data_df,group,title_str = "", label_x = NULL, label_y = NULL){#alpha beta beta_n lambda beta_c slope group
   plot_list <- list()
@@ -1969,12 +2101,12 @@ tmp_df2 <- cor(t(as.matrix(tmp_df[,2:19])), method = "pearson",use = "complete.o
 #SCE no volume normalization
 #Build combined heatmap
 plot_list <- list()
-
+#Extra info
 tmp_df <- data.frame(gene = row.names(starmap_normalized@assays$RNA@counts), starmap_normalized@assays$RNA@counts) %>%
     right_join(cl_res_list$sder_cc[,c(1,29)],by = c("gene" = "gene")) %>% subset(subset = gene %in% gene_list)
-
+#single cell expression only
 tmp_df <- data.frame(gene = row.names(starmap_normalized@assays$RNA@counts), starmap_normalized@assays$RNA@counts)# %>%
-    right_join(Dec31_para[,c(2,30)],by = c("gene" = "gene")) 
+    #right_join(Dec31_para[,c(2,30)],by = c("gene" = "gene")) 
 
 #normalize by total cell 
 tmp_df[,2:(dim(tmp_df)[2]-1)] <- tmp_df[,2:(dim(tmp_df)[2]-1)] / 
@@ -2022,7 +2154,7 @@ gene_cl_res$cluster <- apply(gene_cl_res,1,
                                else 4
                              })
 
-for(i in c("1h_labeling","1h_labeling_2h_wash","1h_labeling_4h_wash","1h_labeling_6h_wash")){
+for(i in levels(starmap_normalized@meta.data$sample %>% as.factor())){
     tmp_df2 <- tmp_df[,2:(dim(tmp_df)[2])] %>% .[,starmap_normalized@meta.data$sample == i] %>%
         as.matrix() %>% t() %>% cor(method = "pearson", use = "complete.obs")
     colnames(tmp_df2) <- row.names(tmp_df2) <- tmp_df$gene
@@ -2033,6 +2165,10 @@ for(i in c("1h_labeling","1h_labeling_2h_wash","1h_labeling_4h_wash","1h_labelin
 }
 
 draw(plot_list[[2]]+plot_list[[3]]+plot_list[[4]]+plot_list[[5]]+plot_list[[1]])
+#heatmap subset
+require(InteractiveComplexHeatmap)
+htShiny(plot_list[[1]])
+
 
 #all combined cor
 tmp_vec <- colSums(tmp_df2)
@@ -2086,28 +2222,28 @@ for(i in c("1h_labeling","1h_labeling_2h_wash","1h_labeling_4h_wash","1h_labelin
                 show_row_names = F,  show_column_names = F, column_order = tmp_vec, row_order = tmp_vec)
 }
 
-#subset
-range_vec <- 779:808
+#####subset#####
+range_vec <- 1:64
 
-tmp_df2 <- cor(t(as.matrix(tmp_df[,2:(dim(tmp_df)[2]-1)])), method = "pearson",use = "complete.obs")
+tmp_df2 <- cor(t(as.matrix(tmp_df[,2:(dim(tmp_df)[2])])), method = "pearson",use = "complete.obs")
 colnames(tmp_df2) <- row.names(tmp_df2) <- tmp_df$gene
 
 plot_list[["combined"]] <- 
     Heatmap(tmp_df2[tmp_vec[range_vec],tmp_vec[range_vec]], use_raster = T, raster_quality = 10, col = col_fun,
-            right_annotation = rowAnnotation(cluster = as.character(tmp_df$cluster[tmp_vec[range_vec]]), 
-                                             col = list(cluster = c("0" = "#F0AF00", "1" = "#153EF5", "2" = "#0BF53A", "3" = "#F50206"))), 
-            show_row_names = F,  show_column_names = F, cluster_rows = F, cluster_columns = F)
-for(i in c("1h_labeling","1h_labeling_2h_wash","1h_labeling_4h_wash","1h_labeling_6h_wash")){
-    tmp_df2 <- tmp_df[,2:(dim(tmp_df)[2]-1)] %>% .[,starmap_normalized@meta.data$sample == i] %>%
+            #right_annotation = rowAnnotation(cluster = as.character(tmp_df$cluster[tmp_vec[range_vec]]), 
+            #                                 col = list(cluster = c("0" = "#F0AF00", "1" = "#153EF5", "2" = "#0BF53A", "3" = "#F50206"))), 
+            show_row_names = T,  show_column_names = F, cluster_rows = F, cluster_columns = F)
+for(i in levels(starmap_normalized@meta.data$sample %>% as.factor())){
+    tmp_df2 <- tmp_df[,2:(dim(tmp_df)[2])] %>% .[,starmap_normalized@meta.data$sample == i] %>%
         as.matrix() %>% t() %>% cor(method = "pearson", use = "complete.obs")
     colnames(tmp_df2) <- row.names(tmp_df2) <- tmp_df$gene
     #write.csv(tmp_df2[tmp_vec,tmp_vec],paste0("mat_",i,".csv"),row.names = F)
     plot_list[[i]] <- 
         Heatmap(tmp_df2[tmp_vec[range_vec],tmp_vec[range_vec]], use_raster = T, raster_quality = 5, col = col_fun,
-                cluster_rows = F, cluster_columns = F)
+                cluster_rows = F, cluster_columns = F,show_row_names = F,  show_column_names = F)
 }
 
-pdf("Mar29_group4_ht_list.pdf",width = 30,height = 6)
+pdf("Feb02_cardiac_list.pdf",width = 60,height = 12)
 draw(plot_list[[2]]+plot_list[[3]]+plot_list[[4]]+plot_list[[5]]+plot_list[[1]])
 dev.off()
 
