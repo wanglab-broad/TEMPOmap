@@ -521,6 +521,7 @@ starmap_normalized@meta.data$KD_label_new <-
            #      10%       90% 
            #0.0754717 0.4318182
            #original
+           #      25%       75% 
            #0.1250000 0.3191489
            #1000gene
            #0.2962963 1.0869565 
@@ -589,9 +590,9 @@ for(i in c("G1","S","G2M")){
         #starmap_normalized@meta.data$Phase == i
       res_df[[paste0(j,"_nc")]] <- apply(res_df,1,
                                          FUN = function(x){
-                                           (starmap_raw_norm@assays$nucleus@data[x[["gene"]],tmp_vec] /
-                                              starmap_raw_norm@assays$cytoplasm@data[x[["gene"]],tmp_vec]) %>% 
-                                             .[is.finite(.)] %>% mean()
+                                           sum(starmap_raw_norm@assays$nucleus@data[x[["gene"]], tmp_vec]) /
+                                              sum(starmap_raw_norm@assays$cytoplasm@data[x[["gene"]], tmp_vec] +
+                                                 starmap_raw_norm@assays$nucleus@data[x[["gene"]], tmp_vec])
                                          })
     }
     tmp_list <- apply(res_df,1,
@@ -606,7 +607,7 @@ for(i in c("G1","S","G2M")){
                              nc_adj_r_sq = summary(lm_res)[["adj.r.squared"]])
                                   })
     tmp_df <- do.call(rbind.data.frame, tmp_list)
-    res_df[["nc_slope"]] <- tmp_df[["nc"]]
+    res_df[["nc_slope"]] <- -1 * as.numeric(tmp_df[,"nc"])
     res_df[["nc_r_sq"]] <- tmp_df[["nc_r_sq"]]
     res_list[[paste0(i,"_",k)]] <- res_df
   }
@@ -651,9 +652,9 @@ for(k in c(levels(starmap_normalized@meta.data[["seurat_clusters"]]),"all")){
     }
     res_df[[paste0(j,"_nc")]] <- apply(res_df,1,
                                        FUN = function(x){
-                                         (starmap_raw_norm@assays$nucleus@data[x[["gene"]],tmp_vec] /
-                                            starmap_raw_norm@assays$cytoplasm@data[x[["gene"]],tmp_vec]) %>% 
-                                           .[is.finite(.)] %>% mean()
+                                         sum(starmap_raw_norm@assays$nucleus@data[x[["gene"]], tmp_vec]) /
+                                              sum(starmap_raw_norm@assays$cytoplasm@data[x[["gene"]], tmp_vec] +
+                                                 starmap_raw_norm@assays$nucleus@data[x[["gene"]], tmp_vec])
                                        })
   }
   tmp_list <- apply(res_df,1,
@@ -668,7 +669,7 @@ for(k in c(levels(starmap_normalized@meta.data[["seurat_clusters"]]),"all")){
                            nc_adj_r_sq = summary(lm_res)[["adj.r.squared"]])
                                 })
   tmp_df <- do.call(rbind.data.frame, tmp_list)
-  res_df[["nc_slope"]] <- tmp_df[["nc"]]
+  res_df[["nc_slope"]] <- -1 * as.numeric(tmp_df[,"nc"])
   res_df[["nc_r_sq"]] <- tmp_df[["nc_r_sq"]]
   res_list[[paste0(dataset,"_cluster",k)]] <- res_df
 }
@@ -706,26 +707,30 @@ for(k in levels(as.factor(starmap_normalized@meta.data$KD_label_new))){
       #starmap_normalized@meta.data$KD_label_new == "siControl" & 
       #starmap_normalized@meta.data$size_group == k
     res_df[[paste0(j,"_nc")]] <- apply(res_df,1,
-                                       FUN = function(x){
-                                         (starmap_raw_norm@assays$nucleus@data[x[["gene"]],tmp_vec] /
-                                            starmap_raw_norm@assays$cytoplasm@data[x[["gene"]],tmp_vec]) %>% 
-                                           .[is.finite(.)] %>% mean()
-                                       })
+                                         FUN = function(x){
+                                           sum(starmap_raw_norm@assays$nucleus@data[x[["gene"]], tmp_vec]) /
+                                              sum(starmap_raw_norm@assays$cytoplasm@data[x[["gene"]], tmp_vec] +
+                                                 starmap_raw_norm@assays$nucleus@data[x[["gene"]], tmp_vec])
+                                         })
   }
-  tmp_list <- apply(res_df,1,
-                    FUN = function(x){
-                      time_vec <- c(0,2,4,6)
-                      nc_vec <- c(x[["1h_labeling_nc"]],x[["1h_labeling_2h_wash_nc"]],
-                                  x[["1h_labeling_4h_wash_nc"]],x[["1h_labeling_6h_wash_nc"]]) %>% as.numeric()
-                      lm_res <- lm(nc~time,data.frame(time = time_vec, nc = nc_vec))
-                      list(gene = x[["gene"]],
-                           nc = lm_res[["coefficients"]][["time"]],
-                           nc_r_sq = summary(lm_res)[["r.squared"]], 
-                           nc_adj_r_sq = summary(lm_res)[["adj.r.squared"]])
-                                })
-  tmp_df <- do.call(rbind.data.frame, tmp_list)
-  res_df[["nc_slope"]] <- tmp_df[["nc"]]
-  res_df[["nc_r_sq"]] <- tmp_df[["nc_r_sq"]]
+  tmp_list  <- apply(res_df,1,
+                       FUN = function(x){
+                         sample_vec <- c("1h_labeling", "1h_labeling_2h_wash", 
+                                         "1h_labeling_4h_wash", "1h_labeling_6h_wash")
+                         time_vec <- c(0,2,4,6)
+                         nc_vec <- rep(0,4)
+                         for(h in 1:4){
+                           nc_vec[h] <- as.numeric(x[[paste0(sample_vec[h],"_nc")]])
+                         }
+                         lm_res <- lm(nc~time, data.frame(nc = nc_vec, time = time_vec))
+                         return(list(nc_ratio = lm_res[["coefficients"]][["time"]],
+                                     nc_r_sq = summary(lm_res)[["r.squared"]], 
+                                     nc_adj_r_sq = summary(lm_res)[["adj.r.squared"]]))
+                         })
+    tmp_df <- do.call(rbind, tmp_list)
+    res_df[["nc_slope"]] <- -1 * as.numeric(tmp_df[,"nc_ratio"])
+    res_df[["nc_r_sq"]] <- as.numeric(tmp_df[,"nc_r_sq"])
+    res_df[["nc_adj_r_sq"]] <- as.numeric(tmp_df[,"nc_adj_r_sq"])
   res_list[[k]] <- res_df
 }
 #plot density
@@ -744,37 +749,7 @@ ggplot(data = res_list$siControl ,aes(x = lambda, y = beta_c)) +
   geom_point(alpha = 0.5) +
   theme_classic()
 
-#sample genes
-sample_plot <- function(gene, par_df, psd_bulk_list){
-  tmp_vec <- par_df[par_df$gene == gene,]
-  l = tmp_vec[["lambda2"]]
-  b = tmp_vec[["beta_c2"]]
-  tmp_fun <-function(x,t){
-    if(t == 0) (psd_bulk_list$RNA$`1h_labeling`[psd_bulk_list$RNA$gene == gene] * tmp_vec[["beta"]] - 
-                  psd_bulk_list$Nucleus$`1h_labeling`[psd_bulk_list$RNA$gene == gene] * (tmp_vec[["ked"]] - x)) /
-      psd_bulk_list$Cytoplasm$`1h_labeling`[psd_bulk_list$RNA$gene == gene]
-    else (psd_bulk_list$RNA[[paste0("1h_labeling_",t,"h_wash")]][psd_bulk_list$RNA$gene == gene] * tmp_vec[["beta"]] - 
-                  psd_bulk_list$Nucleus[[paste0("1h_labeling_",t,"h_wash")]][psd_bulk_list$RNA$gene == gene] * (tmp_vec[["ked"]] - x)) /
-      psd_bulk_list$Cytoplasm[[paste0("1h_labeling_",t,"h_wash")]][psd_bulk_list$RNA$gene == gene]
-  }
-  p <-
-  ggplot() + xlim(0, max(2 * l,1.2 * tmp_vec[["lambda"]])) + 
-    theme_classic() + labs(title = gene) + xlab("Lambda") + ylab("beta_c") +
-    geom_segment(aes(x = 0, xend = max(2 * l,1.2 * tmp_vec[["lambda"]]), 
-                     y = tmp_fun(0, 0), yend = tmp_fun(max(2 * l,1.2 * tmp_vec[["lambda"]]), 0))) +
-    geom_segment(aes(x = 0, xend = max(2 * l,1.2 * tmp_vec[["lambda"]]), 
-                     y = tmp_fun(0, 2), yend = tmp_fun(max(2 * l,1.2 * tmp_vec[["lambda"]]), 2))) +
-    geom_segment(aes(x = 0, xend = max(2 * l,1.2 * tmp_vec[["lambda"]]), 
-                     y = tmp_fun(0, 4), yend = tmp_fun(max(2 * l,1.2 * tmp_vec[["lambda"]]), 4))) +
-    geom_segment(aes(x = 0, xend = max(2 * l,1.2 * tmp_vec[["lambda"]]), 
-                     y = tmp_fun(0, 6), yend = tmp_fun(max(2 * l,1.2 * tmp_vec[["lambda"]]), 6))) +
-    geom_point(aes(x = l, y = b), color = "blue") + 
-    geom_point(aes(x = tmp_vec[["lambda"]],
-                   y = tmp_vec[["beta_c"]]), color = "red")
-  return(p)
-}
 
-sample_plot("AARS",res_list$siControl,psd_bulk_list)
 
 # beta fitting curve
 require(reshape2)
@@ -1108,16 +1083,12 @@ dev.off()
 ```{r plot corr}
 require(viridis)
 
-TEMPO_regression <- read_csv("export_csv/TEMPO-regression.csv")
+TEMPO_regression <- read.csv("export_csv/TEMPO-regression_siControl_new.csv")
 #ctrl & regression
 tmp_df <- left_join(res_list$siControl,TEMPO_regression, by = "gene")
 colnames(tmp_df)[which(colnames(tmp_df) == "slope")] <- "gamma"
-tmp_vec <- c("alpha","beta","beta_n","beta_c","lambda","gamma")
-#YTHDC1 
-tmp_df <- res_list$siYTHDC1
-tmp_vec <- c("alpha","beta","beta_n","beta_c","lambda")
-
-tmp_df %<>% subset(subset = beta_r_sq >= 0.5 & ked_r_sq >= 0.5 & !is.na(beta_n) & beta_n > 0 & beta_c > 0 & lambda > 0 )
+tmp_vec <- c("alpha","beta","nc_slope","gamma")
+tmp_df %<>% subset(subset = beta_r_sq >= 0.5)
 
 #tmp_df$beta_c <- tmp_df$beta_c2
 
@@ -1132,7 +1103,8 @@ for(i in tmp_vec){
         ggplot(data = tmp_df,aes_string(x = i))+ 
           geom_histogram(color="black", fill="white")+
           theme_classic()+
-          xlim(0,quantile(tmp_df[[i]],probs = 0.99)) +
+          xlim(ifelse(i %in% c("nc_slope","gamma"),quantile(tmp_df[[i]],probs = 0.01),0),
+               quantile(tmp_df[[i]],probs = 0.99)) +
           theme(axis.title.x = element_blank(), axis.title.y = element_blank())
           #theme_void()+theme(panel.border = element_rect(colour = "black", fill=NA, size=1))
       label_list %<>% append(values = i)
@@ -1142,8 +1114,10 @@ for(i in tmp_vec){
                aes_string(x = j,y = i, color = get_density(n = 100, x = tmp_df[[j]], y = tmp_df[[i]])))+ 
           geom_point(size = 0.5) +
           geom_smooth(data = tmp_df, mapping = aes_string(x = j,y = i), method=lm, se=FALSE, fullrange=TRUE, color = "red") +
-          xlim(0,quantile(tmp_df[[j]],probs = 0.95)) +
-          ylim(0,quantile(tmp_df[[i]],probs = 0.95)) +
+          xlim(ifelse(j %in% c("nc_slope","gamma"),quantile(tmp_df[[j]],probs = 0.01),0),
+               quantile(tmp_df[[j]],probs = 0.99)) +
+          ylim(ifelse(i %in% c("nc_slope","gamma"),quantile(tmp_df[[i]],probs = 0.01),0),
+               quantile(tmp_df[[i]],probs = 0.99)) +
           theme_classic() + scale_color_gradient(low = "#BDDBFF", high = "#1CAAF7") +
           theme(axis.title.x = element_blank(), axis.title.y = element_blank(),legend.position = "none")
           #theme_void()+theme(panel.border = element_rect(colour = "black", fill=NA, size=1),legend.position = "none")
@@ -1155,8 +1129,6 @@ for(i in tmp_vec){
 }
 
 ggarrange(plotlist = plot_list,ncol = length(tmp_vec),nrow = length(tmp_vec), labels = label_list, label.x = 0.5)
-
-
 ```
 
 ```{r}
