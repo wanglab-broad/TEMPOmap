@@ -1,6 +1,6 @@
 # TEMPOmap
 
-Scripts for the '**Spatiotemporally resolved single-cell transcriptomics reveals kinetic sculpting of RNA life cycle**'. 
+This repository contains scripts for the '**Spatiotemporally resolved single-cell transcriptomics reveals kinetic sculpting of RNA life cycle**'. 
 
 1. ```Image processing``` (Image registration, spot calling, and barcode filtering)
 2. ```Cell processing``` (RNA cytoplasmic translocation modeling and estimation in HeLa cells)
@@ -8,6 +8,14 @@ Scripts for the '**Spatiotemporally resolved single-cell transcriptomics reveals
 4. ```Other cell lines``` (other data processing and RNA cytoplasmic translocation modeling and estimation in hiPSC-CM and skin cell dataset)
 
 ***
+
+### Other Info
+
+#### Citation
+If you find TEMPOmap useful for your work, please cite our paper: https://www.nature.com/articles/s41592-023-01829-8 (citation will be updated).
+
+#### Contact
+Contact us at jren@broadinstitute.org if you have any issues. 
 
 #### Contributor
 
