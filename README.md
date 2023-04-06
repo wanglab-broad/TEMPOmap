@@ -11,6 +11,14 @@ This repository contains scripts for the '**Spatiotemporally resolved single-cel
 
 ### Other Info
 
+#### Related Dataset 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7803716.svg)](https://doi.org/10.5281/zenodo.7803716)
+
+The related datasets can be found:
+1. [Single Cell Portal](https://singlecell.broadinstitute.org/single_cell/study/SCP1792)
+2. [Zenodo](https://doi.org/10.5281/zenodo.7803716) 
+* ***Please use the most recent version of the dataset.***
+
 #### Citation
 If you find TEMPOmap useful for your work, please cite our paper: https://www.nature.com/articles/s41592-023-01829-8 (citation will be updated).
 

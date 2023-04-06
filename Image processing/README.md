@@ -1,4 +1,4 @@
-### Image processing
+# Image processing
 
 Image registration, spot calling, and barcode filtering were applied according to previous reports 1, 2 with modifications.
 
