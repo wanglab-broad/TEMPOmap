@@ -20,7 +20,9 @@ The related datasets can be found:
 * ***Please use the most recent version of the dataset.***
 
 #### Citation
-If you find TEMPOmap useful for your work, please cite our paper: https://www.nature.com/articles/s41592-023-01829-8 (citation will be updated).
+If you find TEMPOmap useful for your work, please cite our paper: https://www.nature.com/articles/s41592-023-01829-8.
+
+> Ren, J., Zhou, H., Zeng, H. et al. Spatiotemporally resolved transcriptomics reveals the subcellular RNA kinetic landscape. Nat Methods (2023). https://doi.org/10.1038/s41592-023-01829-8
 
 #### Contact
 Contact us at jren@broadinstitute.org if you have any issues. 
