@@ -1,6 +1,6 @@
 # TEMPOmap
 
-![fig_1](https://github.com/wanglab-broad/TEMPOmap/.fig/fig1.png)
+![fig_1](https://github.com/wanglab-broad/TEMPOmap/blob/main/.fig/fig1.png)
 
 This repository contains scripts for the '**Spatiotemporally resolved single-cell transcriptomics reveals kinetic sculpting of RNA life cycle**'. 
 
